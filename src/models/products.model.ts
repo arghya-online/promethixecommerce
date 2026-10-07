@@ -6,7 +6,7 @@ export interface IProduct extends Document {
   slug: string;
   description: string;
   price: number;
-  category: string;
+  category: mongoose.Types.ObjectId;
   images: string[];
   stock: number;
   isActive: boolean;
@@ -47,12 +47,12 @@ const productSchema = new Schema<IProduct>(
     },
 
     // Product category
+    // References the category this product belongs to
     category: {
-      type: String,
+      type: Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
-      trim: true,
     },
-
     // Product image URLs
     images: {
       type: [String],

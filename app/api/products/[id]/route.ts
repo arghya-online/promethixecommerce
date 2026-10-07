@@ -2,6 +2,7 @@ import { connectDB } from "@/src/lib/db";
 import Product from "@/src/models/products.model";
 import { Types } from "mongoose";
 import { updateProductSchema } from "@/src/validations/product.validation";
+import { requireAdmin } from "@/src/lib/auth/require-admin";
 
 // GET /api/products/:id
 // This gets one product using its MongoDB ID
@@ -64,6 +65,21 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // Check whether the requester is an admin
+  const adminCheck = await requireAdmin(request);
+
+  // Stop unauthorized requests
+  if (!adminCheck.authorized) {
+    return Response.json(
+      {
+        success: false,
+        message: adminCheck.message,
+      },
+      {
+        status: adminCheck.status,
+      },
+    );
+  }
   try {
     // Get product ID from the URL
     const { id } = await params;
@@ -140,6 +156,19 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // Check whether the requester is an admin
+  const adminCheck = await requireAdmin(request);
+  if (!adminCheck.authorized) {
+    return Response.json(
+      {
+        success: false,
+
+        message: adminCheck.message,
+      },
+      { status: adminCheck.status },
+    );
+  }
+
   try {
     // Connect to MongoDB
     await connectDB();

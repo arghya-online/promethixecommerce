@@ -15,7 +15,7 @@ export const createProductSchema = z.object({
   price: z.number().min(0, "Price cannot be negative"),
 
   // Product category
-  category: z.string().min(1, "Product category is required").trim(),
+  category: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid category ID"),
 
   // Product images
   images: z.array(z.string()).optional(),

@@ -1,9 +1,24 @@
 import { connectDB } from "@/src/lib/db";
 import Product from "@/src/models/products.model";
 import { createProductSchema } from "@/src/validations/product.validation";
+import { requireAdmin } from "@/src/lib/auth/require-admin";
 
 //POST method to create a new product
 export async function POST(request: Request) {
+  // Check if the user is an admin
+  const adminCheck = await requireAdmin(request);
+
+  //Stop unauthorized users from creating products
+  if (!adminCheck.authorized) {
+    return Response.json(
+      {
+        success: false,
+        message: adminCheck.message,
+      },
+      { status: adminCheck.status },
+    );
+  }
+
   try {
     await connectDB();
 
@@ -57,28 +72,55 @@ export async function POST(request: Request) {
   }
 }
 
-// GET method to fetch all products
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    // Connect to MongoDB
     await connectDB();
 
-    //Get all products from the database
-    const products = await Product.find();
+    // Read pagination values from the URL
+    const { searchParams } = new URL(request.url);
+
+    const page = Math.max(Number(searchParams.get("page")) || 1, 1);
+
+    const limit = Math.min(
+      Math.max(Number(searchParams.get("limit")) || 20, 1),
+      100,
+    );
+
+    // Calculate how many products MongoDB should skip
+    const skip = (page - 1) * limit;
+
+    // Get products for the requested page
+    const products = await Product.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Get total number of products
+    const totalProducts = await Product.countDocuments();
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalProducts / limit);
 
     return Response.json({
       success: true,
       products,
+      pagination: {
+        page,
+        limit,
+        totalProducts,
+        totalPages,
+      },
     });
   } catch (error) {
-    console.error("Error fetching products:", error);
+    console.error("Product fetching error:", error);
+
     return Response.json(
       {
         success: false,
         message: "Failed to fetch products",
       },
-      {
-        status: 500,
-      },
+      { status: 500 },
     );
   }
 }
