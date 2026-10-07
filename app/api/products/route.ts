@@ -2,6 +2,7 @@ import { connectDB } from "@/src/lib/db";
 import Product from "@/src/models/products.model";
 import { createProductSchema } from "@/src/validations/product.validation";
 import { requireAdmin } from "@/src/lib/auth/require-admin";
+import Category from "@/src/models/category.model";
 
 //POST method to create a new product
 export async function POST(request: Request) {
@@ -92,6 +93,7 @@ export async function GET(request: Request) {
 
     // Get products for the requested page
     const products = await Product.find()
+      .populate("category")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

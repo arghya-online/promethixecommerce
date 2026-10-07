@@ -3,6 +3,7 @@ import Product from "@/src/models/products.model";
 import { Types } from "mongoose";
 import { updateProductSchema } from "@/src/validations/product.validation";
 import { requireAdmin } from "@/src/lib/auth/require-admin";
+import Category from "@/src/models/category.model";
 
 // GET /api/products/:id
 // This gets one product using its MongoDB ID
@@ -29,7 +30,7 @@ export async function GET(
     }
 
     // Find the product
-    const product = await Product.findById(id);
+    const product = await Product.findById(id).populate("category");
 
     // Product doesn't exist
     if (!product) {
@@ -115,6 +116,20 @@ export async function PATCH(
 
     // Get the validated update data
     const productData = validationResult.data;
+    // Check that the selected category exists
+    const categoryExists = await Category.exists({
+      _id: productData.category,
+    });
+
+    if (!categoryExists) {
+      return Response.json(
+        {
+          success: false,
+          message: "Category not found",
+        },
+        { status: 400 },
+      );
+    }
 
     // Update the product using the validated data
     const product = await Product.findByIdAndUpdate(id, productData, {
