@@ -36,6 +36,7 @@ export interface IOrder extends Document {
     | "shipped"
     | "delivered"
     | "cancelled";
+  razorpayOrderId?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -199,6 +200,10 @@ const orderSchema = new Schema<IOrder>(
         "cancelled",
       ],
       default: "pending",
+    },
+    razorpayOrderId: {
+      type: String,
+      default: null,
     },
   },
   {
