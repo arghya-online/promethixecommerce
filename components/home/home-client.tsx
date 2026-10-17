@@ -51,7 +51,7 @@ const DEFAULT_CATEGORIES = [
     id: "prototypes",
     name: "Prototypes",
     description: "Test your design in your hands before you spend on tooling.",
-    image: "/category-prototypes.JPG",
+    image: "/category-prototypes.jpg",
     href: "/custom-orders",
     actionLabel: "Start a prototype",
   },
