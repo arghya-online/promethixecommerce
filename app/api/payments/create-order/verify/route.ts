@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import { auth } from "@/src/lib/auth";
 import { connectDB } from "@/src/lib/db";
 import Order from "@/src/models/order.model";
+import { getRazorpayClient, getRazorpayConfig } from "@/src/lib/razorpay";
 
 // Verify Razorpay payment signature
 export async function POST(request: Request) {
@@ -74,19 +75,23 @@ export async function POST(request: Request) {
       );
     }
 
-    // Generate the expected signature using the secret key
+    const { keySecret } = getRazorpayConfig();
+
+    // Generate the expected signature using the server-side secret key.
     const expectedSignature = createHmac(
       "sha256",
-      process.env.RAZORPAY_KEY_SECRET!,
+      keySecret,
     )
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
     // Compare signatures safely
-    const signaturesMatch = timingSafeEqual(
-      Buffer.from(expectedSignature, "hex"),
-      Buffer.from(razorpay_signature, "hex"),
-    );
+    const signaturesMatch =
+      expectedSignature.length === razorpay_signature.length &&
+      timingSafeEqual(
+        Buffer.from(expectedSignature, "hex"),
+        Buffer.from(razorpay_signature, "hex"),
+      );
 
     if (!signaturesMatch) {
       return Response.json(
@@ -95,9 +100,29 @@ export async function POST(request: Request) {
       );
     }
 
-    // Mark the order as paid only after signature verification
-    order.paymentStatus = "paid";
-    await order.save();
+    const razorpay = getRazorpayClient();
+    const razorpayOrder = await razorpay.orders.fetch(razorpay_order_id);
+    if (
+      razorpayOrder.amount !== Math.round(order.total * 100) ||
+      razorpayOrder.currency !== "INR"
+    ) {
+      return Response.json(
+        { success: false, message: "Payment amount mismatch" },
+        { status: 400 },
+      );
+    }
+
+    // Mark the order as paid only after signature and amount verification.
+    await Order.updateOne(
+      { _id: order._id, paymentStatus: { $ne: "paid" } },
+      {
+        $set: {
+          paymentStatus: "paid",
+          orderStatus: order.orderStatus === "pending" ? "confirmed" : order.orderStatus,
+          razorpayPaymentId: razorpay_payment_id,
+        },
+      },
+    );
 
     return Response.json({
       success: true,

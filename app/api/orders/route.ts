@@ -101,38 +101,58 @@ export async function POST(req: Request) {
 
     const total = subtotal + shippingCost;
 
-    // Create the order
-    const order = await Order.create({
-      user: session.user.id,
-      items: orderItems,
-      shippingAddress: validationResult.data.shippingAddress,
-      subtotal,
-      shippingCost,
-      total,
-      paymentStatus: "pending",
-      orderStatus: "pending",
-    });
+    const reservedProducts: Array<{ id: typeof cart.items[number]["product"]; quantity: number }> = [];
 
-    // Reduce product stock
-    for (const item of cart.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: {
-          stock: -item.quantity,
-        },
+    try {
+      for (const item of cart.items) {
+        const reserved = await Product.findOneAndUpdate(
+          {
+            _id: item.product,
+            isActive: true,
+            stock: { $gte: item.quantity },
+          },
+          { $inc: { stock: -item.quantity } },
+          { new: true },
+        );
+
+        if (!reserved) {
+          throw new Error(`Insufficient stock for ${item.product}`);
+        }
+        reservedProducts.push({ id: item.product, quantity: item.quantity });
+      }
+
+      // Create the order only after every item has been reserved atomically.
+      const order = await Order.create({
+        user: session.user.id,
+        items: orderItems,
+        shippingAddress: validationResult.data.shippingAddress,
+        subtotal,
+        shippingCost,
+        total,
+        paymentStatus: "pending",
+        orderStatus: "pending",
+        inventoryReserved: true,
       });
+
+      // Empty the cart after creating the order
+      cart.items = [];
+      await cart.save();
+
+      return Response.json(
+        {
+          success: true,
+          order,
+        },
+        { status: 201 },
+      );
+    } catch (error) {
+      await Promise.all(
+        reservedProducts.map(({ id, quantity }) =>
+          Product.findByIdAndUpdate(id, { $inc: { stock: quantity } }),
+        ),
+      );
+      throw error;
     }
-
-    // Empty the cart after creating the order
-    cart.items = [];
-    await cart.save();
-
-    return Response.json(
-      {
-        success: true,
-        order,
-      },
-      { status: 201 },
-    );
   } catch (error) {
     console.error("Order creation error:", error);
 

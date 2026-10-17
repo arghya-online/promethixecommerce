@@ -1,14 +1,7 @@
-import Razorpay from "razorpay";
 import { auth } from "@/src/lib/auth";
 import { connectDB } from "@/src/lib/db";
 import Order from "@/src/models/order.model";
-
-
-//Initialize Razorpay instance
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+import { getRazorpayClient, getRazorpayConfig } from "@/src/lib/razorpay";
 
 //Create a Razorpay Pyment Order
 export async function POST(req: Request) {
@@ -31,7 +24,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { orderId } = body;
 
-    if (typeof orderId !== "string") {
+    if (typeof orderId !== "string" || !/^[a-f\d]{24}$/i.test(orderId)) {
       return new Response(JSON.stringify({ message: "Invalid orderId" }), {
         status: 400,
       });
@@ -47,7 +40,9 @@ export async function POST(req: Request) {
       });
     }
 
-    //Prevent duplicate payment order creation if the order is already paid
+    const { keyId } = getRazorpayConfig();
+
+    // Prevent duplicate payment order creation if the order is already paid.
     if (order.paymentStatus === "paid") {
       return new Response(
         JSON.stringify({ message: "Order is already paid" }),
@@ -57,7 +52,20 @@ export async function POST(req: Request) {
       );
     }
 
-    //Razorpay order creation options
+    if (order.razorpayOrderId) {
+      return Response.json({
+        success: true,
+        payment: {
+          razorpayOrderId: order.razorpayOrderId,
+          amount: Math.round(order.total * 100),
+          currency: "INR",
+          keyId,
+          orderId: order._id,
+        },
+      });
+    }
+
+    const razorpay = getRazorpayClient();
     const razorpayOrder = await razorpay.orders.create({
       amount: Math.round(order.total * 100),
       currency: "INR",
@@ -77,7 +85,7 @@ export async function POST(req: Request) {
         razorpayOrderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        keyId: process.env.RAZORPAY_KEY_ID,
+        keyId,
         orderId: order._id,
       },
     });

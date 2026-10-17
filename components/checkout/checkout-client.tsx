@@ -158,6 +158,7 @@ export default function CheckoutClient() {
   async function placeOrder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting || paymentState === "success" || !validateAddress()) return;
+    // Allow retry if a DB order already exists (pendingOrderId set) even if cart appears empty
     if (!pendingOrderId && !cart?.items.length) {
       setError("Your cart is empty.");
       return;
@@ -166,6 +167,11 @@ export default function CheckoutClient() {
     setSubmitting(true);
     setPaymentState("processing");
     setError("");
+
+    // Track whether we successfully handed off to the Razorpay modal.
+    // If we throw before that point we reset submitting ourselves.
+    // After razorpay.open() the handler/ondismiss callbacks own that state.
+    let modalOpened = false;
 
     try {
       let orderId = pendingOrderId;
@@ -229,11 +235,16 @@ export default function CheckoutClient() {
         theme: { color: "#b55335" },
       });
 
+      modalOpened = true;
       razorpay.open();
     } catch (reason: unknown) {
       setPaymentState("failure");
       setError(reason instanceof Error ? reason.message : "Could not complete checkout.");
-      setSubmitting(false);
+      // Only reset submitting if we never handed off to the Razorpay modal.
+      // If the modal was opened, its handler/ondismiss callbacks own this state.
+      if (!modalOpened) {
+        setSubmitting(false);
+      }
     }
   }
 
@@ -361,7 +372,7 @@ export default function CheckoutClient() {
 
               {error ? <p className="feedback feedback-error" role="alert">{error}</p> : null}
 
-              <button type="submit" className="button button-primary checkout-submit" disabled={submitting || !cart?.items.length}>
+              <button type="submit" className="button button-primary checkout-submit" disabled={submitting || (!cart?.items.length && !pendingOrderId)}>
                 {submitting ? <Spinner className="spin" size={18} aria-hidden="true" /> : <LockKey size={18} aria-hidden="true" />}
                 {submitting ? "Processing…" : "Place order and pay"}
               </button>

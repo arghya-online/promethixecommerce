@@ -40,6 +40,9 @@ export interface IOrder extends Document {
     | "delivered"
     | "cancelled";
   razorpayOrderId?: string | null;
+  razorpayPaymentId?: string | null;
+  inventoryReserved: boolean;
+  inventoryRestored: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -222,6 +225,18 @@ const orderSchema = new Schema<IOrder>(
     razorpayOrderId: {
       type: String,
       default: null,
+    },
+    razorpayPaymentId: {
+      type: String,
+      default: null,
+    },
+    inventoryReserved: {
+      type: Boolean,
+      default: true,
+    },
+    inventoryRestored: {
+      type: Boolean,
+      default: false,
     },
   },
   {
