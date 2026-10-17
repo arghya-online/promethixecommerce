@@ -36,11 +36,15 @@ export function Hero() {
           </p>
 
           <div className="clean-hero-cta-row">
-            <Link href="/custom-orders" className="clean-btn clean-btn--primary">
-              Get a Free Quote <ArrowRight size={17} weight="bold" aria-hidden="true" />
+            <Link
+              href="/custom-orders"
+              className="clean-btn clean-btn--primary"
+            >
+              Get a Free Quote{" "}
+              <ArrowRight size={17} weight="bold" aria-hidden="true" />
             </Link>
             <Link href="/shop" className="clean-btn clean-btn--secondary">
-              Shop Ready-Made Products
+              Visit Store
             </Link>
           </div>
 
@@ -48,7 +52,10 @@ export function Hero() {
             Free review · No commitment · Reply within 24 hours
           </p>
 
-          <div className="clean-hero-trust-strip" aria-label="Why choose Promethix3D">
+          <div
+            className="clean-hero-trust-strip"
+            aria-label="Why choose Promethix3D"
+          >
             {TRUST_ITEMS.map((item) => (
               <span className="clean-hero-trust-item" key={item}>
                 <TrustIcon />

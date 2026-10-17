@@ -4,9 +4,7 @@ import {
   ArrowRight,
   CaretDown,
   Check,
-  Cube,
   EnvelopeSimple,
-  Gear,
   MapPin,
   Package,
   PhoneCall,
@@ -25,44 +23,46 @@ import { Hero } from "@/components/home/Hero";
 
 const DEFAULT_CATEGORIES = [
   {
-    id: "gifts",
-    name: "Personalised Gifts",
-    description: "Nameplates, keychains, lithophane lamps and keepsakes they'll actually remember.",
-    image: "/category-gifts.png",
+    id: "lamps",
+    name: "Personalised Lamps",
+    description: "Custom 3D liprinted lamps with your photos, text or design.",
+    image: "/category-lamps.jpg",
     href: "/custom-orders",
     actionLabel: "Make a gift",
   },
   {
     id: "figurines",
     name: "Figurines & Idols",
-    description: "Fine-detail miniatures, deity idols and statues in smooth resin or crisp FDM.",
-    image: "/category-figuries.jpg",
+    description: "Fine-detail miniatures, deity idols and statues.",
+    image: "/category-figurines.jpg",
     href: "/shop",
     actionLabel: "See figurines",
   },
   {
     id: "mechanical",
     name: "Working Parts",
-    description: "Strong brackets, gears and replacements in PETG, ABS and carbon fibre.",
+    description:
+      "Strong brackets, gears and replacements in PETG, ABS and carbon fibre.",
+    image: "/category-mechanical.jpg",
     href: "/custom-orders",
     actionLabel: "Get a part made",
-    icon: Gear,
   },
   {
     id: "prototypes",
     name: "Prototypes",
     description: "Test your design in your hands before you spend on tooling.",
+    image: "/category-prototypes.JPG",
     href: "/custom-orders",
     actionLabel: "Start a prototype",
-    icon: Wrench,
   },
   {
     id: "decor",
     name: "Home & Desk",
-    description: "Planters, cable organisers and décor that make your space yours.",
+    description:
+      "Planters, cable organisers and décor that make your space yours.",
+    image: "/category-decor.jpg",
     href: "/shop",
     actionLabel: "Browse décor",
-    icon: Cube,
   },
 ];
 
@@ -117,19 +117,22 @@ const CUSTOMER_REVIEWS = [
     name: "Debanjan M.",
     city: "Kolkata, WB",
     project: "Custom Replacement Motor Mount (PETG)",
-    comment: "Brought in a broken mount from a drone frame with caliper measurements. The replacement fit perfectly and the PETG print was even sturdier than the original.",
+    comment:
+      "Brought in a broken mount from a drone frame with caliper measurements. The replacement fit perfectly and the PETG print was even sturdier than the original.",
   },
   {
     name: "Rohan S.",
     city: "Bengaluru, KA",
     project: "Functional Prototype Enclosure",
-    comment: "Dimensions on the STEP model matched within ±0.08 mm. Quick CAD clearance review and dispatch was super clean.",
+    comment:
+      "Dimensions on the STEP model matched within ±0.08 mm. Quick CAD clearance review and dispatch was super clean.",
   },
   {
     name: "Priyanka D.",
     city: "Pune, MH",
     project: "Custom Lithophane Lamp",
-    comment: "The photo detail on the lamp came out sharp and clear. Delivered safely to Pune with solid shockproof packing.",
+    comment:
+      "The photo detail on the lamp came out sharp and clear. Delivered safely to Pune with solid shockproof packing.",
   },
 ];
 
@@ -168,15 +171,15 @@ export default function HomeClient() {
   useEffect(() => {
     let active = true;
 
-    Promise.all([
-      fetch("/api/products?limit=6"),
-    ])
+    Promise.all([fetch("/api/products?limit=6")])
       .then(async ([prodRes]) => {
         const prodData = prodRes.ok ? await prodRes.json() : null;
 
         if (!active) return;
         if (prodData?.success) {
-          setProducts((prodData.products as Product[]).filter((p) => p.isActive));
+          setProducts(
+            (prodData.products as Product[]).filter((p) => p.isActive),
+          );
         }
       })
       .catch(() => {})
@@ -206,9 +209,12 @@ export default function HomeClient() {
           <Container>
             <div className="clean-section-header">
               <div>
-                <h2 className="font-heading clean-section-title">Whatever you imagine, we can make it real.</h2>
+                <h2 className="font-heading clean-section-title">
+                  Whatever you imagine, we can make it real.
+                </h2>
                 <p className="clean-section-subtitle">
-                  From personalized gifts to functional mechanical components, we match each job to the right process.
+                  From personalized gifts to functional mechanical components,
+                  we match each job to the right process.
                 </p>
               </div>
               <Link href="/shop" className="clean-section-link">
@@ -218,26 +224,26 @@ export default function HomeClient() {
 
             <div className="clean-categories-grid">
               {DEFAULT_CATEGORIES.map((cat) => {
-                const Icon = cat.icon || Cube;
                 return (
-                  <Link key={cat.id} href={cat.href} className="clean-category-card">
+                  <Link
+                    key={cat.id}
+                    href={cat.href}
+                    className="clean-category-card"
+                  >
                     <div className="clean-category-thumb">
-                      {cat.image ? (
-                        <Image
-                          src={cat.image}
-                          alt={cat.name}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 30vw"
-                          className="clean-category-thumb-img"
-                        />
-                      ) : (
-                        <div className="clean-category-icon-box">
-                          <Icon size={36} weight="light" />
-                        </div>
-                      )}
+                      <Image
+                        src={cat.image}
+                        alt={cat.name}
+                        fill
+                        priority={cat.id === "gifts"}
+                        sizes="(max-width: 768px) 100vw, 30vw"
+                        className="clean-category-thumb-img"
+                      />
                     </div>
                     <div className="clean-category-content">
-                      <h3 className="font-heading clean-category-name">{cat.name}</h3>
+                      <h3 className="font-heading clean-category-name">
+                        {cat.name}
+                      </h3>
                       <p className="clean-category-desc">{cat.description}</p>
                       <span className="clean-category-action">
                         {cat.actionLabel} <ArrowRight size={13} />
@@ -256,17 +262,24 @@ export default function HomeClient() {
         <section id="how-it-works" className="clean-section clean-section--alt">
           <Container>
             <div className="clean-section-header clean-section-header--center">
-              <h2 className="font-heading clean-section-title">Easy, even if you&apos;ve never touched CAD.</h2>
+              <h2 className="font-heading clean-section-title">
+                Easy, even if you&apos;ve never touched CAD.
+              </h2>
               <p className="clean-section-subtitle">
-                No 3D modeling experience needed. We guide you from rough concept to finished, inspected part.
+                No 3D modeling experience needed. We guide you from rough
+                concept to finished, inspected part.
               </p>
             </div>
 
             <div className="clean-steps-grid">
               {HOW_IT_WORKS.map((item) => (
                 <div key={item.step} className="clean-step-card">
-                  <span className="clean-step-num font-heading">{item.step}</span>
-                  <h3 className="font-heading clean-step-title">{item.title}</h3>
+                  <span className="clean-step-num font-heading">
+                    {item.step}
+                  </span>
+                  <h3 className="font-heading clean-step-title">
+                    {item.title}
+                  </h3>
                   <p className="clean-step-desc">{item.desc}</p>
                 </div>
               ))}
@@ -281,7 +294,9 @@ export default function HomeClient() {
           <Container>
             <div className="clean-section-header">
               <div>
-                <h2 className="font-heading clean-section-title">Ready to ship, made in Kolkata.</h2>
+                <h2 className="font-heading clean-section-title">
+                  Ready to ship, made in Kolkata.
+                </h2>
                 <p className="clean-section-subtitle">
                   In stock and dispatched fast. No waiting for a quote.
                 </p>
@@ -311,7 +326,10 @@ export default function HomeClient() {
               <div className="clean-empty-state">
                 <Package size={36} />
                 <p>New studio products are currently in production.</p>
-                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                <Link
+                  href="/custom-orders"
+                  className="clean-btn clean-btn--primary"
+                >
                   Get a Free Quote
                 </Link>
               </div>
@@ -322,16 +340,23 @@ export default function HomeClient() {
         {/* ══════════════════════════════════════════════════════
             5. CUSTOM ORDERS
         ══════════════════════════════════════════════════════ */}
-        <section id="custom-printing" className="clean-section clean-section--alt">
+        <section
+          id="custom-printing"
+          className="clean-section clean-section--alt"
+        >
           <Container>
             <div className="clean-custom-box">
               <div className="clean-custom-copy">
-                <span className="clean-eyebrow clean-eyebrow--accent">Custom Orders</span>
+                <span className="clean-eyebrow clean-eyebrow--accent">
+                  Custom Orders
+                </span>
                 <h2 className="font-heading clean-custom-title">
                   Have an idea or a broken part? Start here.
                 </h2>
                 <p className="clean-custom-desc">
-                  You don’t need a 3D file. Send a sketch, photos, measurements or the physical part. We’ll tell you honestly what’s possible, build the model, and quote you clearly.
+                  You don’t need a 3D file. Send a sketch, photos, measurements
+                  or the physical part. We’ll tell you honestly what’s possible,
+                  build the model, and quote you clearly.
                 </p>
 
                 <div className="clean-custom-points">
@@ -346,7 +371,9 @@ export default function HomeClient() {
                     <Check size={18} weight="bold" />
                     <div>
                       <strong>Honest, upfront pricing.</strong>
-                      <span>Based on material and machine time. No hidden fees.</span>
+                      <span>
+                        Based on material and machine time. No hidden fees.
+                      </span>
                     </div>
                   </div>
                   <div className="clean-point">
@@ -359,16 +386,23 @@ export default function HomeClient() {
                 </div>
 
                 <div className="clean-custom-cta-area">
-                  <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                  <Link
+                    href="/custom-orders"
+                    className="clean-btn clean-btn--primary"
+                  >
                     Request My Free Quote <ArrowRight size={16} />
                   </Link>
-                  <span className="clean-custom-note">Free review · No commitment · Fast response</span>
+                  <span className="clean-custom-note">
+                    Free review · No commitment · Fast response
+                  </span>
                 </div>
               </div>
 
               <div className="clean-custom-info-card">
                 <h3 className="font-heading">Files we accept</h3>
-                <p>If you already have a 3D model or reference, you can upload:</p>
+                <p>
+                  If you already have a 3D model or reference, you can upload:
+                </p>
                 <div className="clean-formats-tags">
                   <span>.STL</span>
                   <span>.STEP</span>
@@ -380,7 +414,9 @@ export default function HomeClient() {
                   <span>.PNG</span>
                 </div>
 
-                <h3 className="font-heading" style={{ marginTop: "1.5rem" }}>Common applications</h3>
+                <h3 className="font-heading" style={{ marginTop: "1.5rem" }}>
+                  Common applications
+                </h3>
                 <ul className="clean-app-list">
                   <li>• Custom gifts &amp; 3D lithophane lamps</li>
                   <li>• Detailed miniatures and idols</li>
@@ -399,9 +435,12 @@ export default function HomeClient() {
         <section id="why-us" className="clean-section">
           <Container>
             <div className="clean-section-header clean-section-header--center">
-              <h2 className="font-heading clean-section-title">Real makers. Real workshop. Real accountability.</h2>
+              <h2 className="font-heading clean-section-title">
+                Real makers. Real workshop. Real accountability.
+              </h2>
               <p className="clean-section-subtitle">
-                A dedicated Indian 3D printing workshop built around craftsmanship, honest communication, and reliable turnaround.
+                A dedicated Indian 3D printing workshop built around
+                craftsmanship, honest communication, and reliable turnaround.
               </p>
             </div>
 
@@ -413,7 +452,9 @@ export default function HomeClient() {
                     <div className="clean-why-icon">
                       <Icon size={24} weight="bold" />
                     </div>
-                    <h3 className="font-heading clean-why-title">{item.title}</h3>
+                    <h3 className="font-heading clean-why-title">
+                      {item.title}
+                    </h3>
                     <p className="clean-why-desc">{item.desc}</p>
                   </div>
                 );
@@ -424,15 +465,23 @@ export default function HomeClient() {
             <div className="clean-proof-bar">
               <div>
                 <span className="clean-proof-stat font-heading">150+</span>
-                <span className="clean-proof-label">Custom Orders Delivered</span>
+                <span className="clean-proof-label">
+                  Custom Orders Delivered
+                </span>
               </div>
               <div>
                 <span className="clean-proof-stat font-heading">± 0.08 mm</span>
-                <span className="clean-proof-label">Caliper-Inspected Tolerances</span>
+                <span className="clean-proof-label">
+                  Caliper-Inspected Tolerances
+                </span>
               </div>
               <div>
-                <span className="clean-proof-stat font-heading">100% In-House</span>
-                <span className="clean-proof-label">Kolkata Studio Production</span>
+                <span className="clean-proof-stat font-heading">
+                  100% In-House
+                </span>
+                <span className="clean-proof-label">
+                  Kolkata Studio Production
+                </span>
               </div>
             </div>
 
@@ -440,10 +489,14 @@ export default function HomeClient() {
             <div className="clean-reviews-grid">
               {CUSTOMER_REVIEWS.map((rev, idx) => (
                 <div key={idx} className="clean-review-card">
-                  <p className="clean-review-text">&ldquo;{rev.comment}&rdquo;</p>
+                  <p className="clean-review-text">
+                    &ldquo;{rev.comment}&rdquo;
+                  </p>
                   <div>
                     <span className="clean-review-author">{rev.name}</span>
-                    <span className="clean-review-location">{rev.city} · {rev.project}</span>
+                    <span className="clean-review-location">
+                      {rev.city} · {rev.project}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -461,33 +514,55 @@ export default function HomeClient() {
               <h2 className="font-heading clean-section-title">
                 Crafting happiness, one layer at a time.
               </h2>
-              <p className="clean-section-subtitle" style={{ maxWidth: "48rem" }}>
-                Promethix3D was founded with a singular conviction: digital ideas deserve physical form without industrial barriers. Based at IEM Management House in Kolkata, we bridge the gap between creative imagination and physical reality through advanced additive manufacturing.
+              <p
+                className="clean-section-subtitle"
+                style={{ maxWidth: "48rem" }}
+              >
+                Promethix3D was founded with a singular conviction: digital
+                ideas deserve physical form without industrial barriers. Based
+                at IEM Management House in Kolkata, we bridge the gap between
+                creative imagination and physical reality through advanced
+                additive manufacturing.
               </p>
             </div>
 
             <div className="about-grid">
               <div className="about-card">
                 <span className="about-step font-heading">01</span>
-                <h3 className="font-heading about-card-title">Bespoke Engineering</h3>
+                <h3 className="font-heading about-card-title">
+                  Bespoke Engineering
+                </h3>
                 <p className="about-card-desc">
-                  Whether it is a custom mechanical mount for robotics, a rapid prototype for a startup, or an intricate art piece, we calibrate print speed, infill geometry, and layer adhesion to meet structural requirements.
+                  Whether it is a custom mechanical mount for robotics, a rapid
+                  prototype for a startup, or an intricate art piece, we
+                  calibrate print speed, infill geometry, and layer adhesion to
+                  meet structural requirements.
                 </p>
               </div>
 
               <div className="about-card">
                 <span className="about-step font-heading">02</span>
-                <h3 className="font-heading about-card-title">Dual Technologies</h3>
+                <h3 className="font-heading about-card-title">
+                  Dual Technologies
+                </h3>
                 <p className="about-card-desc">
-                  We operate high-precision FDM filament systems (using PLA, PETG, ABS, and Carbon-Fiber composites) alongside ultra-detailed UV SLA resin printers achieving 0.05mm layer resolution.
+                  We operate high-precision FDM filament systems (using PLA,
+                  PETG, ABS, and Carbon-Fiber composites) alongside
+                  ultra-detailed UV SLA resin printers achieving 0.05mm layer
+                  resolution.
                 </p>
               </div>
 
               <div className="about-card">
                 <span className="about-step font-heading">03</span>
-                <h3 className="font-heading about-card-title">Pan-India Reach</h3>
+                <h3 className="font-heading about-card-title">
+                  Pan-India Reach
+                </h3>
                 <p className="about-card-desc">
-                  From Kolkata, we deliver to all 28 Indian states with dedicated tracking and protective multi-layer packaging. Every item undergoes rigorous manual dimensional checks before dispatch.
+                  From Kolkata, we deliver to all 28 Indian states with
+                  dedicated tracking and protective multi-layer packaging. Every
+                  item undergoes rigorous manual dimensional checks before
+                  dispatch.
                 </p>
               </div>
             </div>
@@ -495,14 +570,20 @@ export default function HomeClient() {
             <div className="about-connect-section">
               <div className="about-contact-info">
                 <span className="clean-eyebrow">Studio Location</span>
-                <h3 className="font-heading about-connect-title">Visit or Connect</h3>
+                <h3 className="font-heading about-connect-title">
+                  Visit or Connect
+                </h3>
                 <p className="about-connect-sub">
-                  We welcome custom project consultations, student projects, prototyping inquiries, and corporate bulk orders.
+                  We welcome custom project consultations, student projects,
+                  prototyping inquiries, and corporate bulk orders.
                 </p>
                 <div className="about-contact-list">
                   <div className="about-contact-item">
                     <MapPin size={20} className="about-contact-icon" />
-                    <span>IEM Management House, D-1, Street No. 13, EP Block, Sector V, Bidhannagar, Kolkata, West Bengal 700091</span>
+                    <span>
+                      IEM Management House, D-1, Street No. 13, EP Block, Sector
+                      V, Bidhannagar, Kolkata, West Bengal 700091
+                    </span>
                   </div>
                   <div className="about-contact-item">
                     <PhoneCall size={20} className="about-contact-icon" />
@@ -510,16 +591,25 @@ export default function HomeClient() {
                   </div>
                   <div className="about-contact-item">
                     <EnvelopeSimple size={20} className="about-contact-icon" />
-                    <a href="mailto:promethix3d@gmail.com">promethix3d@gmail.com</a>
+                    <a href="mailto:promethix3d@gmail.com">
+                      promethix3d@gmail.com
+                    </a>
                   </div>
                 </div>
               </div>
 
               <div className="about-cta-card">
                 <span className="clean-eyebrow">Start Fabrication</span>
-                <h3 className="font-heading about-cta-heading">Have a project in mind?</h3>
-                <p className="about-cta-text">Send us your concept or 3D model for a personalized quote.</p>
-                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                <h3 className="font-heading about-cta-heading">
+                  Have a project in mind?
+                </h3>
+                <p className="about-cta-text">
+                  Send us your concept or 3D model for a personalized quote.
+                </p>
+                <Link
+                  href="/custom-orders"
+                  className="clean-btn clean-btn--primary"
+                >
                   Get a Free Quote <ArrowRight size={16} />
                 </Link>
               </div>
@@ -533,9 +623,12 @@ export default function HomeClient() {
         <section id="faqs" className="clean-section clean-section--alt">
           <Container className="clean-faq-container">
             <div className="clean-section-header clean-section-header--center">
-              <h2 className="font-heading clean-section-title">Frequently asked questions</h2>
+              <h2 className="font-heading clean-section-title">
+                Frequently asked questions
+              </h2>
               <p className="clean-section-subtitle">
-                Clear answers to common questions about pricing, materials, and turnaround.
+                Clear answers to common questions about pricing, materials, and
+                turnaround.
               </p>
             </div>
 
@@ -543,7 +636,10 @@ export default function HomeClient() {
               {FAQS.map((faq, index) => {
                 const isOpen = openFaq === index;
                 return (
-                  <div key={index} className={`clean-faq-item ${isOpen ? "is-open" : ""}`}>
+                  <div
+                    key={index}
+                    className={`clean-faq-item ${isOpen ? "is-open" : ""}`}
+                  >
                     <button
                       type="button"
                       className="clean-faq-question"
@@ -575,10 +671,14 @@ export default function HomeClient() {
                 Ready to see your idea in your hands?
               </h2>
               <p className="clean-final-desc">
-                Tell us what you have in mind. We’ll reply with a clear, fixed quote and no obligation.
+                Tell us what you have in mind. We’ll reply with a clear, fixed
+                quote and no obligation.
               </p>
               <div className="clean-final-buttons">
-                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                <Link
+                  href="/custom-orders"
+                  className="clean-btn clean-btn--primary"
+                >
                   Get a Free Quote <ArrowRight size={16} />
                 </Link>
                 <Link href="/shop" className="clean-btn clean-btn--secondary">
@@ -605,12 +705,15 @@ export default function HomeClient() {
               Promethix<strong>3D</strong>
             </Link>
             <p className="clean-footer-tagline">
-              Custom 3D printing and CAD modelling studio based in Kolkata, India. Shipping nationwide.
+              Custom 3D printing and CAD modelling studio based in Kolkata,
+              India. Shipping nationwide.
             </p>
             <div className="clean-footer-address">
               <p>
-                <strong>Studio Address:</strong><br />
-                IEM Management House, D-1, Street No. 13, EP Block,<br />
+                <strong>Studio Address:</strong>
+                <br />
+                IEM Management House, D-1, Street No. 13, EP Block,
+                <br />
                 Sector V, Bidhannagar, Kolkata, West Bengal 700091
               </p>
               <p style={{ marginTop: "0.5rem" }}>
@@ -641,7 +744,11 @@ export default function HomeClient() {
 
             <div className="clean-footer-col">
               <h4>Connect</h4>
-              <a href="https://www.instagram.com/promethix3d/" target="_blank" rel="noreferrer">
+              <a
+                href="https://www.instagram.com/promethix3d/"
+                target="_blank"
+                rel="noreferrer"
+              >
                 Instagram (@promethix3d)
               </a>
               <Link href="/account">Customer Account</Link>

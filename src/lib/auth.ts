@@ -13,6 +13,17 @@ if (!MONGODB_URI) {
 const client = new MongoClient(MONGODB_URI);
 
 const db = client.db("promethix3d");
+const trustedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "https://promethix3d.in",
+  "https://www.promethix3d.in",
+  ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(",") ?? []),
+  process.env.BETTER_AUTH_URL,
+  process.env.NEXT_PUBLIC_APP_URL,
+]
+  .map((origin) => origin?.trim().replace(/\/$/, ""))
+  .filter((origin): origin is string => Boolean(origin));
 
 let adminSync: Promise<void> | undefined;
 
@@ -96,6 +107,7 @@ export const auth = betterAuth({
   // Do NOT pass the MongoClient.
   // This prevents Better Auth from using MongoDB transactions.
   database: mongodbAdapter(db),
+  trustedOrigins,
 
   emailAndPassword: {
     enabled: true,

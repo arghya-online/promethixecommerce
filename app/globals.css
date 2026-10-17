@@ -375,6 +375,57 @@ img {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.shop-title {
+  color: #000;
+  font-size: clamp(2.75rem, 10vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  line-height: 0.95;
+  margin: 0;
+}
+
+.shop-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  flex-basis: 100%;
+  order: 2;
+  overflow-x: auto;
+  padding: 0.25rem 0.1rem 0.5rem;
+  scrollbar-width: thin;
+}
+
+.search-field {
+  order: 1;
+}
+
+.sort-field {
+  margin-left: auto;
+  order: 3;
+}
+
+.shop-categories button {
+  background: #fff;
+  border: 1px solid #e7e2dc;
+  border-radius: 0.45rem;
+  box-shadow: 0 2px 8px rgb(28 25 23 / 8%);
+  color: #000;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.7rem 1rem;
+  white-space: nowrap;
+}
+
+.shop-categories button:hover,
+.shop-categories button.is-active {
+  background: #fff;
+  border-color: #000;
+  box-shadow: 0 3px 10px rgb(28 25 23 / 14%);
+  color: #000;
+}
+
 .product-card {
   min-width: 0;
 }
@@ -687,6 +738,7 @@ img {
   align-items: center;
   border-bottom: 1px solid var(--border);
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   justify-content: space-between;
   margin-bottom: 2rem;
@@ -2373,6 +2425,21 @@ img {
     align-items: stretch;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .search-field,
+  .shop-categories,
+  .sort-field {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .shop-categories {
+    flex-wrap: nowrap;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
   }
 
   .sort-field {
@@ -4988,7 +5055,8 @@ select option {
 }
 
 .clean-category-thumb {
-  height: 180px;
+  aspect-ratio: 4 / 3;
+  min-height: 180px;
   position: relative;
   background: var(--surface-subtle);
   display: flex;
@@ -4998,12 +5066,12 @@ select option {
 }
 
 .clean-category-thumb-img {
-  object-fit: cover;
-  transition: transform 0.35s ease;
+  object-fit: contain;
+  padding: 0.5rem;
 }
 
 .clean-category-card:hover .clean-category-thumb-img {
-  transform: scale(1.03);
+  opacity: 0.96;
 }
 
 .clean-category-icon-box {

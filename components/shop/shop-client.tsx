@@ -3,7 +3,7 @@
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ProductCard } from "@/components/catalog/product-card";
-import type { Product } from "@/components/catalog/product-types";
+import type { Category, Product } from "@/components/catalog/product-types";
 import { Container } from "@/components/layout/container";
 import { SiteHeader } from "@/components/navigation/site-header";
 
@@ -21,6 +21,8 @@ function ProductSkeleton() {
 
 export default function ShopClient() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortOrder>("newest");
   const [loading, setLoading] = useState(true);
@@ -28,11 +30,31 @@ export default function ShopClient() {
 
   const loadProducts = useCallback(async () => {
     try {
-      const response = await fetch("/api/products?limit=100");
-      const data = await response.json();
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        fetch("/api/products?limit=100"),
+        fetch("/api/categories"),
+      ]);
+      const data = await productsResponse.json();
+      const categoriesData = await categoriesResponse.json();
 
-      if (!response.ok || !data.success || !Array.isArray(data.products)) {
+      if (
+        !productsResponse.ok ||
+        !data.success ||
+        !Array.isArray(data.products)
+      ) {
         throw new Error("Products could not be loaded");
+      }
+
+      if (
+        categoriesResponse.ok &&
+        categoriesData.success &&
+        Array.isArray(categoriesData.categories)
+      ) {
+        setCategories(
+          (categoriesData.categories as Category[]).filter(
+            (category) => category.isActive,
+          ),
+        );
       }
 
       setProducts(
@@ -57,13 +79,22 @@ export default function ShopClient() {
 
   const visibleProducts = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    const categoryFiltered = selectedCategory
+      ? products.filter((product) => {
+          const category =
+            typeof product.category === "string"
+              ? product.category
+              : product.category?._id ?? product.category?.slug;
+          return category === selectedCategory;
+        })
+      : products;
     const filtered = normalizedQuery
-      ? products.filter((product) =>
+      ? categoryFiltered.filter((product) =>
           `${product.name} ${product.description} ${product.material ?? ""} ${product.dimensions ?? ""}`
             .toLowerCase()
             .includes(normalizedQuery),
         )
-      : [...products];
+      : [...categoryFiltered];
 
     return filtered.sort((a, b) => {
       if (sort === "price-low") return a.price - b.price;
@@ -71,18 +102,12 @@ export default function ShopClient() {
       if (sort === "name") return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [products, query, sort]);
+  }, [products, query, selectedCategory, sort]);
 
   return (
     <div className="site-shell">
       <SiteHeader />
       <main>
-        <section className="shop-intro">
-          <Container>
-            <h3 className="shop-title">Shop</h3>
-          </Container>
-        </section>
-
         <section className="shop-content">
           <Container>
             <div className="shop-toolbar">
@@ -105,6 +130,29 @@ export default function ShopClient() {
                   </button>
                 ) : null}
               </label>
+              {categories.length > 0 ? (
+                <nav className="shop-categories" aria-label="Shop categories">
+                <button
+                  type="button"
+                  className={!selectedCategory ? "is-active" : ""}
+                  onClick={() => setSelectedCategory("")}
+                >
+                  All products
+                </button>
+                {categories.map((category) => (
+                  <button
+                    type="button"
+                    className={
+                      selectedCategory === category._id ? "is-active" : ""
+                    }
+                    key={category._id}
+                    onClick={() => setSelectedCategory(category._id)}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+                </nav>
+              ) : null}
               <label className="sort-field">
                 <span>Sort</span>
                 <select
@@ -145,7 +193,7 @@ export default function ShopClient() {
                 <p>
                   {products.length === 0
                     ? "New objects are on the way."
-                    : "No products match your search."}
+                    : "No products match your filters."}
                 </p>
                 {query ? (
                   <button
@@ -154,6 +202,15 @@ export default function ShopClient() {
                     onClick={() => setQuery("")}
                   >
                     Clear search
+                  </button>
+                ) : null}
+                {selectedCategory ? (
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setSelectedCategory("")}
+                  >
+                    Show all categories
                   </button>
                 ) : null}
               </div>
