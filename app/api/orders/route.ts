@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     }
 
     // Calculate shipping on the server
-    const shippingCost = subtotal >= 2000 ? 0 : 100;
+    const shippingCost = subtotal >= 2000 ? 0 : 0;
 
     const total = subtotal + shippingCost;
 
