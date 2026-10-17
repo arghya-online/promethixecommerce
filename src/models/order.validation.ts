@@ -4,8 +4,11 @@ import { z } from "zod";
 const shippingAddressSchema = z.object({
   fullName: z.string().min(2).trim(),
   phone: z.string().min(10).trim(),
+  houseNumber: z.string().min(1, "House or flat number is required").trim(),
   addressLine1: z.string().min(1).trim(),
   addressLine2: z.string().trim().optional(),
+  landmark: z.string().min(1, "Landmark is required").trim(),
+  locationDetails: z.string().min(5, "Exact location details are required").trim(),
   city: z.string().min(1).trim(),
   state: z.string().min(1).trim(),
   postalCode: z.string().min(4).trim(),

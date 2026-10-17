@@ -1,14 +1,19 @@
-import clientPromise from "./db";
+import mongoose from "mongoose";
+import { connectDB } from "./db";
 
 export async function insertTestData() {
-  const client = await clientPromise;
+  await connectDB();
 
-  const db = client.db(process.env.MONGODB_DB);
+  const db = mongoose.connection.db;
+
+  if (!db) {
+    throw new Error("MongoDB connection is not available");
+  }
 
   const collection = db.collection("test");
   const result = await collection.insertOne({
     message: "MongoDB is working",
-    createdAt: new Date().toLocaleDateString(),
+    createdAt: new Date().toISOString(),
   });
 
   return result;

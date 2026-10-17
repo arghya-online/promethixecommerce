@@ -1,8 +1,8 @@
 import { connectDB } from "@/src/lib/db";
 import Category from "@/src/models/category.model";
 import { createCategorySchema } from "@/src/validations/category.validation";
-import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/src/lib/auth/require-admin";
+
 
 export async function POST(request: Request) {
   try {

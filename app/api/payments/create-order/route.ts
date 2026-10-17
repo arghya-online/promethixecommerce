@@ -2,7 +2,7 @@ import Razorpay from "razorpay";
 import { auth } from "@/src/lib/auth";
 import { connectDB } from "@/src/lib/db";
 import Order from "@/src/models/order.model";
-import { error } from "console";
+
 
 //Initialize Razorpay instance
 const razorpay = new Razorpay({
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     }
 
     //Prevent duplicate payment order creation if the order is already paid
-    if (order.isPaid) {
+    if (order.paymentStatus === "paid") {
       return new Response(
         JSON.stringify({ message: "Order is already paid" }),
         {

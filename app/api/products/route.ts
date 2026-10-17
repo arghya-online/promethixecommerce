@@ -39,9 +39,29 @@ export async function POST(request: Request) {
       );
     }
 
-    const product = await Product.create(body);
+    const productData = validationResult.data;
+    const categoryExists = await Category.exists({ _id: productData.category });
 
-    return new Response(JSON.stringify(product), { status: 201 });
+    if (!categoryExists) {
+      return Response.json(
+        {
+          success: false,
+          message: "Category not found",
+        },
+        { status: 400 },
+      );
+    }
+
+    const product = await Product.create(productData);
+    await product.populate("category");
+
+    return Response.json(
+      {
+        success: true,
+        product,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     // Log the actual error on the server
     console.error("Product creation error:", error);

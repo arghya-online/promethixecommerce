@@ -166,16 +166,45 @@ export async function GET(request: Request) {
 
     await connectDB();
 
-    // Get the user's orders
-    const orders = await Order.find({
-      user: session.user.id,
-    })
-      .populate("items.product")
-      .sort({ createdAt: -1 });
+    const isAdmin = session.user.role === "admin";
+    const params = new URL(request.url).searchParams;
+    const page = Math.max(Number(params.get("page")) || 1, 1);
+    const limit = Math.min(Math.max(Number(params.get("limit")) || 20, 1), 100);
+    const query: Record<string, unknown> = isAdmin ? {} : { user: session.user.id };
+    const search = params.get("search")?.trim();
+    const orderStatus = params.get("orderStatus");
+    const paymentStatus = params.get("paymentStatus");
+    const from = params.get("from");
+    const to = params.get("to");
+
+    if (!isAdmin && (orderStatus || paymentStatus || search || from || to)) {
+      return Response.json({ success: false, message: "Admin access required" }, { status: 403 });
+    }
+    if (orderStatus) query.orderStatus = orderStatus;
+    if (paymentStatus) query.paymentStatus = paymentStatus;
+    if (from || to) {
+      query.createdAt = {
+        ...(from ? { $gte: new Date(from) } : {}),
+        ...(to ? { $lt: new Date(to) } : {}),
+      };
+    }
+    if (search) {
+      query.$or = [
+        { "shippingAddress.fullName": { $regex: search, $options: "i" } },
+        { "shippingAddress.phone": { $regex: search, $options: "i" } },
+        { razorpayOrderId: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const [orders, totalOrders] = await Promise.all([
+      Order.find(query).populate("items.product").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      Order.countDocuments(query),
+    ]);
 
     return Response.json({
       success: true,
       orders,
+      pagination: { page, limit, totalOrders, totalPages: Math.ceil(totalOrders / limit) },
     });
   } catch (error) {
     console.error("Order fetching error:", error);

@@ -12,8 +12,11 @@ export interface IOrderItem {
 export interface IShippingAddress {
   fullName: string;
   phone: string;
+  houseNumber: string;
   addressLine1: string;
   addressLine2?: string;
+  landmark: string;
+  locationDetails: string;
   city: string;
   state: string;
   postalCode: string;
@@ -96,11 +99,26 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
       required: true,
       trim: true,
     },
+    houseNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     addressLine2: {
       type: String,
       trim: true,
       default: "",
+    },
+    landmark: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    locationDetails: {
+      type: String,
+      required: true,
+      trim: true,
     },
 
     city: {

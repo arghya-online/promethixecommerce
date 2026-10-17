@@ -5,6 +5,8 @@ export interface IProduct extends Document {
   name: string;
   slug: string;
   description: string;
+  dimensions: string;
+  material: string;
   price: number;
   category: mongoose.Types.ObjectId;
   images: string[];
@@ -36,6 +38,16 @@ const productSchema = new Schema<IProduct>(
     description: {
       type: String,
       required: true,
+      trim: true,
+    },
+    dimensions: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    material: {
+      type: String,
+      default: "",
       trim: true,
     },
 

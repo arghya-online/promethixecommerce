@@ -15,8 +15,11 @@ export async function connectDB() {
     return;
   }
 
-  // Connect Mongoose to MongoDB Atlas
-  await mongoose.connect(MONGODB_URI!);
+  // Connect Mongoose to MongoDB
+  await mongoose.connect(MONGODB_URI!, {
+    dbName: process.env.DB_NAME || "promethix3d",
+  });
 
-  console.log("MongoDB connected successfully");
+  console.log("MongoDB connected successfully to:", mongoose.connection.name);
 }
+

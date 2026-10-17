@@ -125,7 +125,7 @@ export async function POST(req: Request) {
     }
 
     // Make sure the product is available
-    if (!product.available) {
+    if (!product.isActive) {
       return Response.json(
         {
           success: false,

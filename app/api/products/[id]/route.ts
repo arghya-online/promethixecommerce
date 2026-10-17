@@ -82,6 +82,8 @@ export async function PATCH(
     );
   }
   try {
+    await connectDB();
+
     // Get product ID from the URL
     const { id } = await params;
 
@@ -117,25 +119,28 @@ export async function PATCH(
     // Get the validated update data
     const productData = validationResult.data;
     // Check that the selected category exists
-    const categoryExists = await Category.exists({
-      _id: productData.category,
-    });
+    if (productData.category) {
+      const categoryExists = await Category.exists({
+        _id: productData.category,
+      });
 
-    if (!categoryExists) {
-      return Response.json(
-        {
-          success: false,
-          message: "Category not found",
-        },
-        { status: 400 },
-      );
+      if (!categoryExists) {
+        return Response.json(
+          {
+            success: false,
+            message: "Category not found",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     // Update the product using the validated data
     const product = await Product.findByIdAndUpdate(id, productData, {
       new: true,
       runValidators: true,
-    });
+    }).populate("category");
+
 
     // Product doesn't exist
     if (!product) {

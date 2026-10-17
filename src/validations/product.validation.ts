@@ -10,9 +10,14 @@ export const createProductSchema = z.object({
 
   // Product description
   description: z.string().min(1, "Product description is required").trim(),
+  dimensions: z.string().trim().default(""),
+  material: z.string().trim().default(""),
 
   // Product price
   price: z.number().min(0, "Price cannot be negative"),
+
+  // Number of units currently available
+  stock: z.number().int().min(0, "Stock cannot be negative").default(0),
 
   // Product category
   category: z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid category ID"),
