@@ -32,11 +32,23 @@ export async function POST(req: Request) {
     const validationResult = createOrderSchema.safeParse(body);
 
     if (!validationResult.success) {
+      // Log only the field paths that failed — never field values, addresses, or PII.
+      const failedFields = validationResult.error.issues.map(
+        (issue) => issue.path.join("."),
+      );
+      console.error(
+        "[orders] Validation failed. Fields:",
+        failedFields.join(", "),
+      );
+
       return Response.json(
         {
           success: false,
           message: "Invalid order data",
-          errors: validationResult.error.flatten(),
+          // Include Zod details in development only — never in production.
+          ...(process.env.NODE_ENV !== "production"
+            ? { errors: validationResult.error.flatten() }
+            : {}),
         },
         { status: 400 },
       );

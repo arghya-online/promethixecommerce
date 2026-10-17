@@ -151,6 +151,11 @@ export default function CheckoutClient() {
       setError("Please enter a valid postal code.");
       return false;
     }
+    // Must match backend: locationDetails z.string().min(5)
+    if (address.locationDetails.trim().length < 5) {
+      setError("Please provide more detail for the exact location (at least 5 characters).");
+      return false;
+    }
     return true;
   }
 
