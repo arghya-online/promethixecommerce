@@ -96,12 +96,15 @@ export async function POST(req: Request) {
       });
     }
 
-    // Calculate shipping on the server
+    // Calculate  on the server
     const shippingCost = 0;
 
     const total = subtotal + shippingCost;
 
-    const reservedProducts: Array<{ id: typeof cart.items[number]["product"]; quantity: number }> = [];
+    const reservedProducts: Array<{
+      id: (typeof cart.items)[number]["product"];
+      quantity: number;
+    }> = [];
 
     try {
       for (const item of cart.items) {
@@ -190,7 +193,9 @@ export async function GET(request: Request) {
     const params = new URL(request.url).searchParams;
     const page = Math.max(Number(params.get("page")) || 1, 1);
     const limit = Math.min(Math.max(Number(params.get("limit")) || 20, 1), 100);
-    const query: Record<string, unknown> = isAdmin ? {} : { user: session.user.id };
+    const query: Record<string, unknown> = isAdmin
+      ? {}
+      : { user: session.user.id };
     const search = params.get("search")?.trim();
     const orderStatus = params.get("orderStatus");
     const paymentStatus = params.get("paymentStatus");
@@ -198,7 +203,10 @@ export async function GET(request: Request) {
     const to = params.get("to");
 
     if (!isAdmin && (orderStatus || paymentStatus || search || from || to)) {
-      return Response.json({ success: false, message: "Admin access required" }, { status: 403 });
+      return Response.json(
+        { success: false, message: "Admin access required" },
+        { status: 403 },
+      );
     }
     if (orderStatus) query.orderStatus = orderStatus;
     if (paymentStatus) query.paymentStatus = paymentStatus;
@@ -217,14 +225,23 @@ export async function GET(request: Request) {
     }
 
     const [orders, totalOrders] = await Promise.all([
-      Order.find(query).populate("items.product").sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+      Order.find(query)
+        .populate("items.product")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
       Order.countDocuments(query),
     ]);
 
     return Response.json({
       success: true,
       orders,
-      pagination: { page, limit, totalOrders, totalPages: Math.ceil(totalOrders / limit) },
+      pagination: {
+        page,
+        limit,
+        totalOrders,
+        totalPages: Math.ceil(totalOrders / limit),
+      },
     });
   } catch (error) {
     console.error("Order fetching error:", error);

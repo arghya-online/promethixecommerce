@@ -43,7 +43,9 @@ export default function CartClient() {
       setCart(data.cart ?? { items: [] });
       setError("");
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : "Could not load your cart.");
+      setError(
+        reason instanceof Error ? reason.message : "Could not load your cart.",
+      );
     } finally {
       setLoading(false);
     }
@@ -59,10 +61,13 @@ export default function CartClient() {
 
   const subtotal = useMemo(
     () =>
-      cart?.items.reduce((total, item) => total + item.price * item.quantity, 0) ?? 0,
+      cart?.items.reduce(
+        (total, item) => total + item.price * item.quantity,
+        0,
+      ) ?? 0,
     [cart],
   );
-  const shipping = subtotal >= 2000 ? 0 : subtotal > 0 ? 100 : 0;
+  const shipping = subtotal >= 2000 ? 0 : subtotal > 0 ? 0 : 0;
   const total = subtotal + shipping;
 
   async function updateQuantity(productId: string, quantity: number) {
@@ -82,7 +87,11 @@ export default function CartClient() {
       }
       setCart(data.cart);
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : "Could not update this item.");
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not update this item.",
+      );
       await loadCart();
     } finally {
       setBusyProductId("");
@@ -105,7 +114,11 @@ export default function CartClient() {
       }
       setCart(data.cart);
     } catch (reason: unknown) {
-      setError(reason instanceof Error ? reason.message : "Could not remove this item.");
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not remove this item.",
+      );
     } finally {
       setBusyProductId("");
     }
@@ -132,7 +145,9 @@ export default function CartClient() {
             ) : error && !cart ? (
               <div className="cart-state" role="alert">
                 <p>{error}</p>
-                <Link href="/login" className="button button-primary">Sign in</Link>
+                <Link href="/login" className="button button-primary">
+                  Sign in
+                </Link>
               </div>
             ) : cart?.items.length === 0 ? (
               <div className="cart-state">
@@ -151,14 +166,19 @@ export default function CartClient() {
 
                     return (
                       <article className="cart-item" key={productId}>
-                        <Link href={`/products/${productId}`} className="cart-item-image">
+                        <Link
+                          href={`/products/${productId}`}
+                          className="cart-item-image"
+                        >
                           <ProductImage product={item.product} />
                         </Link>
                         <div className="cart-item-details">
                           <div className="cart-item-heading">
                             <div>
                               <h2>
-                                <Link href={`/products/${productId}`}>{item.product.name}</Link>
+                                <Link href={`/products/${productId}`}>
+                                  {item.product.name}
+                                </Link>
                               </h2>
                               <p>{formatPrice(item.price)}</p>
                             </div>
@@ -173,10 +193,18 @@ export default function CartClient() {
                             </button>
                           </div>
                           <div className="cart-item-footer">
-                            <div className="quantity-control" aria-label={`Quantity for ${item.product.name}`}>
+                            <div
+                              className="quantity-control"
+                              aria-label={`Quantity for ${item.product.name}`}
+                            >
                               <button
                                 type="button"
-                                onClick={() => void updateQuantity(productId, item.quantity - 1)}
+                                onClick={() =>
+                                  void updateQuantity(
+                                    productId,
+                                    item.quantity - 1,
+                                  )
+                                }
                                 disabled={busy || item.quantity <= 1}
                                 aria-label="Decrease quantity"
                               >
@@ -185,25 +213,37 @@ export default function CartClient() {
                               <span aria-live="polite">{item.quantity}</span>
                               <button
                                 type="button"
-                                onClick={() => void updateQuantity(productId, item.quantity + 1)}
+                                onClick={() =>
+                                  void updateQuantity(
+                                    productId,
+                                    item.quantity + 1,
+                                  )
+                                }
                                 disabled={busy || item.quantity >= maxQuantity}
                                 aria-label="Increase quantity"
                               >
                                 <Plus size={16} aria-hidden="true" />
                               </button>
                             </div>
-                            <strong>{formatPrice(item.price * item.quantity)}</strong>
+                            <strong>
+                              {formatPrice(item.price * item.quantity)}
+                            </strong>
                           </div>
                           {item.quantity > maxQuantity ? (
                             <p className="feedback feedback-error">
-                              Stock changed. Please reduce the quantity before checkout.
+                              Stock changed. Please reduce the quantity before
+                              checkout.
                             </p>
                           ) : null}
                         </div>
                       </article>
                     );
                   })}
-                  {error ? <p className="feedback feedback-error" role="alert">{error}</p> : null}
+                  {error ? (
+                    <p className="feedback feedback-error" role="alert">
+                      {error}
+                    </p>
+                  ) : null}
                 </div>
 
                 <aside className="summary-card">
@@ -214,16 +254,24 @@ export default function CartClient() {
                   </div>
                   <div className="summary-row">
                     <span>Shipping</span>
-                    <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+                    <span>
+                      {shipping === 0 ? "Free" : formatPrice(shipping)}
+                    </span>
                   </div>
                   <div className="summary-total">
                     <span>Total</span>
                     <strong>{formatPrice(total)}</strong>
                   </div>
-                  <Link href="/checkout" className="button button-primary summary-button">
-                    Continue to checkout <ArrowRight size={18} aria-hidden="true" />
+                  <Link
+                    href="/checkout"
+                    className="button button-primary summary-button"
+                  >
+                    Continue to checkout{" "}
+                    <ArrowRight size={18} aria-hidden="true" />
                   </Link>
-                  <p className="summary-note">Free shipping on orders over ₹2,000.</p>
+                  <p className="summary-note">
+                    Free shipping on orders over ₹2,000.
+                  </p>
                 </aside>
               </div>
             )}

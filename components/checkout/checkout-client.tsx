@@ -80,7 +80,7 @@ const requiredFields: Array<keyof ShippingAddress> = [
 ];
 
 function getShipping(subtotal: number) {
-  return subtotal >= 2000 ? 0 : subtotal > 0 ? 100 : 0;
+  return subtotal >= 2000 ? 0 : subtotal > 0 ? 0 : 0;
 }
 
 export default function CheckoutClient() {
@@ -89,7 +89,9 @@ export default function CheckoutClient() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState("");
-  const [paymentState, setPaymentState] = useState<"idle" | "processing" | "success" | "failure">("idle");
+  const [paymentState, setPaymentState] = useState<
+    "idle" | "processing" | "success" | "failure"
+  >("idle");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -99,12 +101,21 @@ export default function CheckoutClient() {
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.success) {
-          throw new Error(response.status === 401 ? "Sign in to continue to checkout." : data.message);
+          throw new Error(
+            response.status === 401
+              ? "Sign in to continue to checkout."
+              : data.message,
+          );
         }
         if (active) setCart(data.cart);
       })
       .catch((reason: unknown) => {
-        if (active) setError(reason instanceof Error ? reason.message : "Could not load your cart.");
+        if (active)
+          setError(
+            reason instanceof Error
+              ? reason.message
+              : "Could not load your cart.",
+          );
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -116,7 +127,11 @@ export default function CheckoutClient() {
   }, []);
 
   const subtotal = useMemo(
-    () => cart?.items.reduce((total, item) => total + item.price * item.quantity, 0) ?? 0,
+    () =>
+      cart?.items.reduce(
+        (total, item) => total + item.price * item.quantity,
+        0,
+      ) ?? 0,
     [cart],
   );
   const shipping = getShipping(subtotal);
@@ -216,7 +231,11 @@ export default function CheckoutClient() {
             setPendingOrderId("");
           } catch (reason: unknown) {
             setPaymentState("failure");
-            setError(reason instanceof Error ? reason.message : "Payment verification failed.");
+            setError(
+              reason instanceof Error
+                ? reason.message
+                : "Payment verification failed.",
+            );
           } finally {
             setSubmitting(false);
           }
@@ -225,7 +244,9 @@ export default function CheckoutClient() {
         modal: {
           ondismiss: () => {
             setPaymentState("failure");
-            setError("Payment was cancelled. You can retry payment from this page.");
+            setError(
+              "Payment was cancelled. You can retry payment from this page.",
+            );
             setSubmitting(false);
           },
         },
@@ -239,7 +260,11 @@ export default function CheckoutClient() {
       razorpay.open();
     } catch (reason: unknown) {
       setPaymentState("failure");
-      setError(reason instanceof Error ? reason.message : "Could not complete checkout.");
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : "Could not complete checkout.",
+      );
       // Only reset submitting if we never handed off to the Razorpay modal.
       // If the modal was opened, its handler/ondismiss callbacks own this state.
       if (!modalOpened) {
@@ -253,7 +278,9 @@ export default function CheckoutClient() {
       <div className="site-shell">
         <SiteHeader />
         <Container>
-          <div className="detail-loading" role="status">Loading checkout…</div>
+          <div className="detail-loading" role="status">
+            Loading checkout…
+          </div>
         </Container>
       </div>
     );
@@ -266,7 +293,9 @@ export default function CheckoutClient() {
         <Container>
           <div className="detail-state" role="alert">
             <p>{error}</p>
-            <Link href="/cart" className="button button-secondary">Back to cart</Link>
+            <Link href="/cart" className="button button-secondary">
+              Back to cart
+            </Link>
           </div>
         </Container>
       </div>
@@ -282,8 +311,12 @@ export default function CheckoutClient() {
             <Check size={30} aria-hidden="true" />
             <p className="eyebrow">Payment verified</p>
             <h1 className="font-heading">Thank you for your order.</h1>
-            <p>Your payment has been verified and your order is being prepared.</p>
-            <Link href="/shop" className="button button-primary">Continue shopping</Link>
+            <p>
+              Your payment has been verified and your order is being prepared.
+            </p>
+            <Link href="/shop" className="button button-primary">
+              Continue shopping
+            </Link>
           </div>
         </Container>
       </div>
@@ -297,7 +330,9 @@ export default function CheckoutClient() {
         <Container>
           <div className="cart-state">
             <p>Your cart is empty.</p>
-            <Link href="/shop" className="button button-primary">Shop products</Link>
+            <Link href="/shop" className="button button-primary">
+              Shop products
+            </Link>
           </div>
         </Container>
       </div>
@@ -306,12 +341,17 @@ export default function CheckoutClient() {
 
   return (
     <div className="site-shell">
-      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+      <Script
+        src="https://checkout.razorpay.com/v1/checkout.js"
+        strategy="afterInteractive"
+      />
       <SiteHeader />
       <main>
         <section className="page-intro-section">
           <Container>
-            <Link href="/cart" className="back-link"><ArrowLeft size={17} aria-hidden="true" /> Back to cart</Link>
+            <Link href="/cart" className="back-link">
+              <ArrowLeft size={17} aria-hidden="true" /> Back to cart
+            </Link>
             <p className="eyebrow checkout-eyebrow">Secure checkout</p>
             <h1 className="font-heading page-title">Complete your order.</h1>
           </Container>
@@ -321,64 +361,165 @@ export default function CheckoutClient() {
           <Container className="checkout-layout">
             <form className="checkout-form" onSubmit={placeOrder}>
               <fieldset disabled={submitting}>
-                <legend className="font-heading form-section-title">Shipping details</legend>
+                <legend className="font-heading form-section-title">
+                  Shipping details
+                </legend>
                 <div className="form-grid">
                   <label className="form-field form-field-wide">
                     Full name *
-                    <input value={address.fullName} onChange={(event) => updateAddress("fullName", event.target.value)} autoComplete="name" required />
+                    <input
+                      value={address.fullName}
+                      onChange={(event) =>
+                        updateAddress("fullName", event.target.value)
+                      }
+                      autoComplete="name"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     Phone *
-                    <input value={address.phone} onChange={(event) => updateAddress("phone", event.target.value)} autoComplete="tel" inputMode="tel" required />
+                    <input
+                      value={address.phone}
+                      onChange={(event) =>
+                        updateAddress("phone", event.target.value)
+                      }
+                      autoComplete="tel"
+                      inputMode="tel"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     House / flat number *
-                    <input value={address.houseNumber} onChange={(event) => updateAddress("houseNumber", event.target.value)} autoComplete="address-line1" required />
+                    <input
+                      value={address.houseNumber}
+                      onChange={(event) =>
+                        updateAddress("houseNumber", event.target.value)
+                      }
+                      autoComplete="address-line1"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     Country *
-                    <input value={address.country} onChange={(event) => updateAddress("country", event.target.value)} autoComplete="country-name" required />
+                    <input
+                      value={address.country}
+                      onChange={(event) =>
+                        updateAddress("country", event.target.value)
+                      }
+                      autoComplete="country-name"
+                      required
+                    />
                   </label>
                   <label className="form-field form-field-wide">
                     Street / area address *
-                    <input value={address.addressLine1} onChange={(event) => updateAddress("addressLine1", event.target.value)} autoComplete="address-line1" required />
+                    <input
+                      value={address.addressLine1}
+                      onChange={(event) =>
+                        updateAddress("addressLine1", event.target.value)
+                      }
+                      autoComplete="address-line1"
+                      required
+                    />
                   </label>
                   <label className="form-field form-field-wide">
                     Address line 2
-                    <input value={address.addressLine2} onChange={(event) => updateAddress("addressLine2", event.target.value)} autoComplete="address-line2" />
+                    <input
+                      value={address.addressLine2}
+                      onChange={(event) =>
+                        updateAddress("addressLine2", event.target.value)
+                      }
+                      autoComplete="address-line2"
+                    />
                   </label>
                   <label className="form-field">
                     City *
-                    <input value={address.city} onChange={(event) => updateAddress("city", event.target.value)} autoComplete="address-level2" required />
+                    <input
+                      value={address.city}
+                      onChange={(event) =>
+                        updateAddress("city", event.target.value)
+                      }
+                      autoComplete="address-level2"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     State *
-                    <input value={address.state} onChange={(event) => updateAddress("state", event.target.value)} autoComplete="address-level1" required />
+                    <input
+                      value={address.state}
+                      onChange={(event) =>
+                        updateAddress("state", event.target.value)
+                      }
+                      autoComplete="address-level1"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     Postal code *
-                    <input value={address.postalCode} onChange={(event) => updateAddress("postalCode", event.target.value)} autoComplete="postal-code" inputMode="numeric" required />
+                    <input
+                      value={address.postalCode}
+                      onChange={(event) =>
+                        updateAddress("postalCode", event.target.value)
+                      }
+                      autoComplete="postal-code"
+                      inputMode="numeric"
+                      required
+                    />
                   </label>
                   <label className="form-field">
                     Nearest landmark *
-                    <input value={address.landmark} onChange={(event) => updateAddress("landmark", event.target.value)} placeholder="For example, beside..." required />
+                    <input
+                      value={address.landmark}
+                      onChange={(event) =>
+                        updateAddress("landmark", event.target.value)
+                      }
+                      placeholder="For example, beside..."
+                      required
+                    />
                   </label>
                   <label className="form-field form-field-wide">
                     Exact location / delivery directions *
-                    <textarea rows={3} value={address.locationDetails} onChange={(event) => updateAddress("locationDetails", event.target.value)} placeholder="Add gate, building, floor, entrance, or directions for delivery" required />
+                    <textarea
+                      rows={3}
+                      value={address.locationDetails}
+                      onChange={(event) =>
+                        updateAddress("locationDetails", event.target.value)
+                      }
+                      placeholder="Add gate, building, floor, entrance, or directions for delivery"
+                      required
+                    />
                   </label>
                 </div>
               </fieldset>
 
-              {error ? <p className="feedback feedback-error" role="alert">{error}</p> : null}
+              {error ? (
+                <p className="feedback feedback-error" role="alert">
+                  {error}
+                </p>
+              ) : null}
 
-              <button type="submit" className="button button-primary checkout-submit" disabled={submitting || (!cart?.items.length && !pendingOrderId)}>
-                {submitting ? <Spinner className="spin" size={18} aria-hidden="true" /> : <LockKey size={18} aria-hidden="true" />}
+              <button
+                type="submit"
+                className="button button-primary checkout-submit"
+                disabled={
+                  submitting || (!cart?.items.length && !pendingOrderId)
+                }
+              >
+                {submitting ? (
+                  <Spinner className="spin" size={18} aria-hidden="true" />
+                ) : (
+                  <LockKey size={18} aria-hidden="true" />
+                )}
                 {submitting ? "Processing…" : "Place order and pay"}
               </button>
-              <p className="checkout-payment-note">Secure payment is completed through Razorpay. Cards, UPI, net banking, and wallets may be available based on your location.</p>
+              <p className="checkout-payment-note">
+                Secure payment is completed through Razorpay. Cards, UPI, net
+                banking, and wallets may be available based on your location.
+              </p>
               {paymentState === "failure" ? (
-                <p className="checkout-retry">Your order may already exist. Retry only if you did not complete payment.</p>
+                <p className="checkout-retry">
+                  Your order may already exist. Retry only if you did not
+                  complete payment.
+                </p>
               ) : null}
             </form>
 
@@ -386,7 +527,9 @@ export default function CheckoutClient() {
               <h2 className="font-heading">Order summary</h2>
               {cart?.items.map((item) => (
                 <div className="checkout-item" key={item.product._id}>
-                  <span>{item.product.name} × {item.quantity}</span>
+                  <span>
+                    {item.product.name} × {item.quantity}
+                  </span>
                   <span>{formatPrice(item.price * item.quantity)}</span>
                 </div>
               ))}
