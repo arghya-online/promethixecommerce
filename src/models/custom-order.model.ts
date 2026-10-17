@@ -4,6 +4,7 @@ export interface ICustomOrder extends Document {
   name: string;
   email: string;
   phone: string;
+  projectTitle?: string;
   projectType:
     | "figurine"
     | "gift"
@@ -13,9 +14,15 @@ export interface ICustomOrder extends Document {
     | "prototype"
     | "other";
   description: string;
+  quantity?: string;
   dimensions?: string;
+  material?: string;
+  colorFinish?: string;
+  application?: string;
   timeline?: string;
   budget?: string;
+  fileUrls?: string[];
+  referenceCode?: string;
   status: "new" | "reviewing" | "quoted" | "approved" | "in_production" | "completed" | "rejected" | "cancelled";
   internalNotes?: string;
   quoteAmount?: number | null;
@@ -42,6 +49,11 @@ const customOrderSchema = new Schema<ICustomOrder>(
       required: true,
       trim: true,
     },
+    projectTitle: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     projectType: {
       type: String,
       required: true,
@@ -60,7 +72,27 @@ const customOrderSchema = new Schema<ICustomOrder>(
       required: true,
       trim: true,
     },
+    quantity: {
+      type: String,
+      trim: true,
+      default: "1",
+    },
     dimensions: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    material: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    colorFinish: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    application: {
       type: String,
       trim: true,
       default: "",
@@ -71,6 +103,15 @@ const customOrderSchema = new Schema<ICustomOrder>(
       default: "",
     },
     budget: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    fileUrls: {
+      type: [String],
+      default: [],
+    },
+    referenceCode: {
       type: String,
       trim: true,
       default: "",
@@ -88,6 +129,10 @@ const customOrderSchema = new Schema<ICustomOrder>(
     timestamps: true,
   },
 );
+
+if (process.env.NODE_ENV !== "production") {
+  delete mongoose.models.CustomOrder;
+}
 
 const CustomOrder =
   mongoose.models.CustomOrder ||

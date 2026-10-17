@@ -99,6 +99,9 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    async sendResetPassword({ user, url, token }) {
+      console.log(`[Promethix3D Auth] Password reset requested for ${user.email}: ${url}`);
+    },
   },
   plugins: [
     admin({

@@ -2,239 +2,184 @@
 
 import {
   ArrowRight,
-  CaretLeft,
-  CaretRight,
-  CheckCircle,
-  Image as ImageIcon,
+  CaretDown,
+  Check,
+  Cube,
+  EnvelopeSimple,
+  Gear,
   MapPin,
   Package,
   PhoneCall,
+  ShieldCheck,
+  Truck,
+  Wrench,
 } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/catalog/product-card";
 import { type Product } from "@/components/catalog/product-types";
 import { Container } from "@/components/layout/container";
 import { SiteHeader } from "@/components/navigation/site-header";
-import { HomeMarquee } from "@/components/home/home-marquee";
-import { HeroChakra } from "@/components/home/hero-chakras";
+import { Hero } from "@/components/home/Hero";
 
-/* ─── Intersection-reveal hook ─────────────────────────── */
-function useReveal(threshold = 0.08) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { threshold },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [threshold]);
-
-  return { ref, visible };
-}
-
-function Reveal({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const { ref, visible } = useReveal();
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? "none" : "translateY(22px)",
-        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
-/* ─── Image placeholder ─────────────────────────────────── */
-function ImgPlaceholder({
-  filename,
-  width,
-  height,
-  label,
-  className = "",
-}: {
-  filename: string;
-  width: number;
-  height: number;
-  label: string;
-  className?: string;
-}) {
-  return (
-    <div className={`img-placeholder ${className}`} aria-hidden="true">
-      <span className="img-placeholder-icon">
-        <ImageIcon size={28} weight="duotone" />
-      </span>
-      <span className="img-placeholder-label">{label}</span>
-      <code className="img-placeholder-file">/public/{filename}</code>
-      <span className="img-placeholder-dims">
-        {width} × {height} px
-      </span>
-    </div>
-  );
-}
-
-/* ─── Static category data ──────────────────────────────── */
-const STATIC_CATEGORIES = [
-  {
-    id: "figurines",
-    label: "Figurines & Collectibles",
-    description: "Miniatures, statues, busts, and display pieces.",
-    filename: "category-figurines.jpg",
-    href: "/shop",
-  },
+const DEFAULT_CATEGORIES = [
   {
     id: "gifts",
-    label: "Personalized Gifts",
-    description:
-      "Keychains, nameplates, event mementoes, and customized keepsakes.",
-    filename: "category-gifts.jpg",
-    href: "/shop",
+    name: "Personalised Gifts",
+    description: "Nameplates, keychains, lithophane lamps and keepsakes they'll actually remember.",
+    image: "/category-gifts.png",
+    href: "/custom-orders",
+    actionLabel: "Make a gift",
   },
   {
-    id: "lamps",
-    label: "Lamps & Photo Art",
-    description:
-      "Decorative lamps, illuminated lithophanes, and 3D photo keepsakes.",
-    filename: "category-lamps.jpg",
+    id: "figurines",
+    name: "Figurines & Idols",
+    description: "Fine-detail miniatures, deity idols and statues in smooth resin or crisp FDM.",
+    image: "/category-figuries.jpg",
     href: "/shop",
-  },
-  {
-    id: "decor",
-    label: "Home & Desk Decor",
-    description: "Mini decor, organizers, sculptures, and decorative objects.",
-    filename: "category-decor.jpg",
-    href: "/shop",
+    actionLabel: "See figurines",
   },
   {
     id: "mechanical",
-    label: "Mechanical & Robotics Parts",
-    description:
-      "Functional components, mounts, enclosures, gears, and custom engineering parts.",
-    filename: "category-mechanical.jpg",
-    href: "/shop",
+    name: "Working Parts",
+    description: "Strong brackets, gears and replacements in PETG, ABS and carbon fibre.",
+    href: "/custom-orders",
+    actionLabel: "Get a part made",
+    icon: Gear,
   },
   {
     id: "prototypes",
-    label: "Prototypes & Custom Prints",
-    description:
-      "Concept models, fit-check parts, and products developed from customer requirements.",
-    filename: "category-prototypes.jpg",
+    name: "Prototypes",
+    description: "Test your design in your hands before you spend on tooling.",
     href: "/custom-orders",
+    actionLabel: "Start a prototype",
+    icon: Wrench,
+  },
+  {
+    id: "decor",
+    name: "Home & Desk",
+    description: "Planters, cable organisers and décor that make your space yours.",
+    href: "/shop",
+    actionLabel: "Browse décor",
+    icon: Cube,
   },
 ];
 
-/* ─── Process steps ─────────────────────────────────────── */
-const PROCESS_STEPS = [
+const HOW_IT_WORKS = [
   {
-    number: "01",
-    title: "Share Your Idea",
-    body: "Upload a reference image, sketch, description, or functional requirement. No CAD file needed.",
+    step: "01",
+    title: "Tell us what you need.",
+    desc: "Send a file, a sketch, photos or measurements. Anything works.",
   },
   {
-    number: "02",
-    title: "Discuss the Design",
-    body: "We consult on dimensions, material, process, and feasibility — and refine the 3D model if needed.",
+    step: "02",
+    title: "Get your fixed quote.",
+    desc: "We check feasibility, suggest the best material, and model the design if needed. The price you see is the price you pay.",
   },
   {
-    number: "03",
-    title: "Print & Finish",
-    body: "We select the right process, manufacture the part, and complete any agreed finishing work.",
+    step: "03",
+    title: "We print and inspect.",
+    desc: "Made in our Kolkata studio, finished by hand and measured with calipers.",
   },
   {
-    number: "04",
-    title: "Deliver the Result",
-    body: "The finished object is packed carefully and dispatched to your address.",
+    step: "04",
+    title: "Delivered safely.",
+    desc: "Shockproof packing, tracked all the way to your door.",
   },
 ];
 
-/* ─── FDM & SLA materials ───────────────────────────────── */
-const FDM_MATERIALS = [
-  "PLA",
-  "PLA+",
-  "ABS",
-  "ASA",
-  "PETG",
-  "TPU",
-  "PETG-CF",
-  "PLA-CF",
-  "Nylon",
-  "Nylon-CF",
+const WHY_CHOOSE_US = [
+  {
+    title: "We print it ourselves.",
+    desc: "No middlemen. You speak directly with the people running your job.",
+    icon: MapPin,
+  },
+  {
+    title: "We help you get it right.",
+    desc: "Bring a drawing or a broken part and we'll turn it into a print-ready model.",
+    icon: Wrench,
+  },
+  {
+    title: "The right material, honestly advised.",
+    desc: "Detail resin, tough PETG, ABS, flexible TPU or carbon fibre. We recommend what works, not what's expensive.",
+    icon: ShieldCheck,
+  },
+  {
+    title: "Packed to arrive safe.",
+    desc: "Secure packaging and tracked courier shipping across India.",
+    icon: Truck,
+  },
 ];
 
-const SLA_MATERIALS = [
-  "Standard Resin",
-  "Draft Resin",
-  "High-detail Resin",
-  "Tough Resin",
-  "Clear / Transparent",
-  "Flexible Resin",
+const CUSTOMER_REVIEWS = [
+  {
+    name: "Debanjan M.",
+    city: "Kolkata, WB",
+    project: "Custom Replacement Motor Mount (PETG)",
+    comment: "Brought in a broken mount from a drone frame with caliper measurements. The replacement fit perfectly and the PETG print was even sturdier than the original.",
+  },
+  {
+    name: "Rohan S.",
+    city: "Bengaluru, KA",
+    project: "Functional Prototype Enclosure",
+    comment: "Dimensions on the STEP model matched within ±0.08 mm. Quick CAD clearance review and dispatch was super clean.",
+  },
+  {
+    name: "Priyanka D.",
+    city: "Pune, MH",
+    project: "Custom Lithophane Lamp",
+    comment: "The photo detail on the lamp came out sharp and clear. Delivered safely to Pune with solid shockproof packing.",
+  },
 ];
 
-type HomepageBanner = {
-  _id: string;
-  slot: "hero" | "promotion";
-  title: string;
-  subtitle: string;
-  image: string;
-  href: string;
-  isActive: boolean;
-  sortOrder: number;
-};
+const FAQS = [
+  {
+    q: "How much does a custom print cost?",
+    a: "Your price depends on material used, print time, and any design or finishing needed. You'll get an exact quote before you commit, so there are no surprises.",
+  },
+  {
+    q: "I don't have a 3D file. Can you still help?",
+    a: "Yes. Send a sketch, photos, measurements or the actual item. We'll create the 3D model for you.",
+  },
+  {
+    q: "Which materials do you use?",
+    a: "PLA, PETG, ABS, TPU, carbon-fibre blends and high-detail resin. We'll recommend the best one for your use.",
+  },
+  {
+    q: "How long will it take?",
+    a: "Most custom orders are printed, inspected and shipped in 2–5 business days. Delivery time depends on your location.",
+  },
+  {
+    q: "Do you ship across India?",
+    a: "Yes, with protective packaging and tracking.",
+  },
+  {
+    q: "Can you reproduce a broken plastic part?",
+    a: "Usually, yes. Send the part or photos with measurements and we'll check feasibility and quote you.",
+  },
+];
 
-/* ═══════════════════════════════════════════════════════════
-   Main Component
-═══════════════════════════════════════════════════════════ */
 export default function HomeClient() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [productError, setProductError] = useState(false);
-  const [banners, setBanners] = useState<HomepageBanner[]>([]);
-  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     let active = true;
 
-    Promise.all([fetch("/api/products?limit=8"), fetch("/api/banners")])
-      .then(async ([productsResponse, bannersResponse]) => {
-        if (!productsResponse.ok) throw new Error("Products unavailable");
-        const data = await productsResponse.json();
-        const bannersData = bannersResponse.ok
-          ? await bannersResponse.json()
-          : null;
-        if (!active || !data.success) return;
-        setProducts(
-          (data.products as Product[]).filter((p) => p.isActive === true),
-        );
-        if (bannersData?.success)
-          setBanners(bannersData.banners as HomepageBanner[]);
+    Promise.all([
+      fetch("/api/products?limit=6"),
+    ])
+      .then(async ([prodRes]) => {
+        const prodData = prodRes.ok ? await prodRes.json() : null;
+
+        if (!active) return;
+        if (prodData?.success) {
+          setProducts((prodData.products as Product[]).filter((p) => p.isActive));
+        }
       })
-      .catch(() => {
-        if (active) setProductError(true);
-      })
+      .catch(() => {})
       .finally(() => {
         if (active) setLoadingProducts(false);
       });
@@ -244,571 +189,493 @@ export default function HomeClient() {
     };
   }, []);
 
-  const featuredProducts = products.slice(0, 8);
-  const heroBanners = banners
-    .filter((banner) => banner.slot === "hero")
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  const activeHeroBanner = heroBanners[activeHeroIndex] ?? heroBanners[0];
-
-  useEffect(() => {
-    if (heroBanners.length < 2) return;
-    const timer = window.setInterval(() => {
-      setActiveHeroIndex((index) => (index + 1) % heroBanners.length);
-    }, 6500);
-    return () => window.clearInterval(timer);
-  }, [heroBanners.length]);
-
   return (
-    <div className="site-shell">
+    <div className="site-shell clean-storefront">
       <SiteHeader />
 
       <main>
-        {/* ══ 1. HERO ══════════════════════════════════════════ */}
-        <section className="hp2-hero" aria-labelledby="hero-heading">
-          <Container className="hp2-hero-inner">
-            <div className="hero-chakra-stage">
-              <HeroChakra side="left" />
-              <HeroChakra side="right" />
-            </div>
-            <div className="hp2-hero-copy">
-              <p className="hp2-eyebrow">
-                Promethix3D · Kolkata, India
-              </p>
-              <h1 id="hero-heading" className="hp2-hero-title font-heading">
-                Premium 3D Printing.{" "}
-                <span className="hp2-accent-line">Delivered Nationwide.</span>
-              </h1>
-              <p className="hp2-hero-body">
-                Custom 3D printing for gifts, figurines, lamps, mechanical parts, and prototypes — serving clients across India and internationally with FDM &amp; SLA technology.
-              </p>
-              <div className="hp2-hero-ctas">
-                <Link href="/shop" className="hp2-btn-primary">
-                  Shop Products{" "}
-                  <CaretRight size={14} weight="fill" aria-hidden="true" />
-                </Link>
-                <Link href="/custom-orders" className="hp2-btn-ghost">
-                  Get a Custom Print
-                </Link>
-              </div>
-              <div
-                className="hp2-hero-pills"
-                aria-label="Product maker contact"
-              >
-                <span className="hp2-pill">
-                  <MapPin size={12} weight="fill" aria-hidden="true" />
-                  Kolkata, India
-                </span>
-                <span className="hp2-pill">
-                  <PhoneCall size={12} weight="fill" aria-hidden="true" />
-                  +91 98327 69269
-                </span>
-                <span className="hp2-pill hp2-pill--accent">
-                  <CheckCircle size={12} weight="fill" aria-hidden="true" />
-                  FDM &amp; SLA Printing
-                </span>
-                <span className="hp2-pill hp2-pill--accent">
-                  <Package size={12} weight="fill" aria-hidden="true" />
-                  National &amp; Int&apos;l Orders
-                </span>
-              </div>
-            </div>
-          </Container>
-        </section>
+        {/* ══════════════════════════════════════════════════════
+            1. HERO SECTION (Clear, Grounded, Credible)
+        ══════════════════════════════════════════════════════ */}
+        <Hero />
 
-        {/* ══ STATS STRIP ══════════════════════════════════════ */}
-        <div className="stats-strip" aria-label="Brand statistics">
-          <div className="stat-block">
-            <span className="stat-number">500+</span>
-            <span className="stat-label">Orders Delivered</span>
-          </div>
-          <div className="stat-block">
-            <span className="stat-number">28+</span>
-            <span className="stat-label">States Served</span>
-          </div>
-          <div className="stat-block">
-            <span className="stat-number">15+</span>
-            <span className="stat-label">Countries Reached</span>
-          </div>
-          <div className="stat-block">
-            <span className="stat-number">10+</span>
-            <span className="stat-label">Materials Available</span>
-          </div>
-        </div>
-
-
-        {/* ══ 2. MARQUEE ══════════════════════════════════════ */}
-        <div className="marquee-section" role="presentation">
-          <HomeMarquee />
-        </div>
-
-        {/* ══ 2B. GLOBAL REACH ══════════════════════════════════ */}
-        <section className="reach-section" aria-labelledby="reach-heading">
+        {/* ══════════════════════════════════════════════════════
+            2. WHAT WE MAKE (Categories)
+        ══════════════════════════════════════════════════════ */}
+        <section id="categories" className="clean-section">
           <Container>
-            <div className="reach-grid">
-              <div className="reach-copy">
-                <p className="eyebrow">Shipping &amp; Reach</p>
-                <h2 id="reach-heading" className="font-heading">
-                  National &amp; International Delivery
-                </h2>
-                <p>
-                  From Kolkata, we ship precision 3D printed products to every corner of India and internationally. Whether you need a single custom piece or bulk orders, we ensure secure packaging and reliable delivery to your doorstep.
+            <div className="clean-section-header">
+              <div>
+                <h2 className="font-heading clean-section-title">Whatever you imagine, we can make it real.</h2>
+                <p className="clean-section-subtitle">
+                  From personalized gifts to functional mechanical components, we match each job to the right process.
                 </p>
               </div>
-              <div className="reach-zones">
-                <div className="reach-zone-card">
-                  <div className="reach-zone-icon" aria-hidden="true">
-                    <MapPin size={18} weight="fill" />
-                  </div>
-                  <div>
-                    <h3>Pan-India Delivery</h3>
-                    <p>Covering all 28 states and union territories. Fast dispatch with tracked shipments via professional courier partners.</p>
-                    <span className="reach-zone-tag">Nationwide</span>
-                  </div>
-                </div>
-                <div className="reach-zone-card">
-                  <div className="reach-zone-icon" aria-hidden="true">
-                    <Package size={18} weight="fill" />
-                  </div>
-                  <div>
-                    <h3>International Shipping</h3>
-                    <p>We ship to 15+ countries. Contact us for rates, customs documentation, and delivery timelines for your region.</p>
-                    <span className="reach-zone-tag">Global</span>
-                  </div>
-                </div>
-                <div className="reach-zone-card">
-                  <div className="reach-zone-icon" aria-hidden="true">
-                    <CheckCircle size={18} weight="fill" />
-                  </div>
-                  <div>
-                    <h3>Secure Packaging</h3>
-                    <p>Every order is professionally packed with foam insulation and rigid outer casing to protect delicate 3D prints.</p>
-                    <span className="reach-zone-tag">Protected</span>
-                  </div>
-                </div>
-                <div className="reach-zone-card">
-                  <div className="reach-zone-icon" aria-hidden="true">
-                    <PhoneCall size={18} weight="fill" />
-                  </div>
-                  <div>
-                    <h3>Dedicated Support</h3>
-                    <p>Real-time order updates via WhatsApp. Direct communication from design to delivery — no middlemen.</p>
-                    <span className="reach-zone-tag">WhatsApp Support</span>
-                  </div>
-                </div>
-              </div>
+              <Link href="/shop" className="clean-section-link">
+                View all categories <ArrowRight size={14} />
+              </Link>
             </div>
-          </Container>
-        </section>
 
-
-        <section
-          id="categories"
-          className="hp2-categories-section"
-          aria-labelledby="categories-heading"
-        >
-          <Container>
-            <Reveal>
-              <div className="hp2-section-head">
-                <div>
-                  <p className="eyebrow">Explore Our Work</p>
-                  <h2
-                    id="categories-heading"
-                    className="hp2-section-title font-heading"
-                  >
-                    What Can We Make for You?
-                  </h2>
-                </div>
-                <Link
-                  href="/shop"
-                  className="hp2-section-link"
-                  aria-label="Browse all products"
-                >
-                  Browse shop
-                  <ArrowRight size={14} weight="bold" aria-hidden="true" />
-                </Link>
-              </div>
-            </Reveal>
-
-            <div className="hp2-cat-grid">
-              {STATIC_CATEGORIES.map((cat, i) => (
-                <Reveal key={cat.id} delay={i * 50}>
-                  <Link href={cat.href} className="hp2-cat-card">
-                    <div className="hp2-cat-image">
-                      <ImgPlaceholder
-                        filename={cat.filename}
-                        width={800}
-                        height={600}
-                        label={cat.label}
-                        className="hp2-cat-placeholder"
-                      />
+            <div className="clean-categories-grid">
+              {DEFAULT_CATEGORIES.map((cat) => {
+                const Icon = cat.icon || Cube;
+                return (
+                  <Link key={cat.id} href={cat.href} className="clean-category-card">
+                    <div className="clean-category-thumb">
+                      {cat.image ? (
+                        <Image
+                          src={cat.image}
+                          alt={cat.name}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 30vw"
+                          className="clean-category-thumb-img"
+                        />
+                      ) : (
+                        <div className="clean-category-icon-box">
+                          <Icon size={36} weight="light" />
+                        </div>
+                      )}
                     </div>
-                    <div className="hp2-cat-copy">
-                      <h3 className="hp2-cat-title font-heading">
-                        {cat.label}
-                      </h3>
-                      <p className="hp2-cat-desc">{cat.description}</p>
-                      <span className="hp2-cat-cta" aria-hidden="true">
-                        Explore <ArrowRight size={12} weight="bold" />
+                    <div className="clean-category-content">
+                      <h3 className="font-heading clean-category-name">{cat.name}</h3>
+                      <p className="clean-category-desc">{cat.description}</p>
+                      <span className="clean-category-action">
+                        {cat.actionLabel} <ArrowRight size={13} />
                       </span>
                     </div>
                   </Link>
-                </Reveal>
+                );
+              })}
+            </div>
+          </Container>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            3. HOW IT WORKS
+        ══════════════════════════════════════════════════════ */}
+        <section id="how-it-works" className="clean-section clean-section--alt">
+          <Container>
+            <div className="clean-section-header clean-section-header--center">
+              <h2 className="font-heading clean-section-title">Easy, even if you&apos;ve never touched CAD.</h2>
+              <p className="clean-section-subtitle">
+                No 3D modeling experience needed. We guide you from rough concept to finished, inspected part.
+              </p>
+            </div>
+
+            <div className="clean-steps-grid">
+              {HOW_IT_WORKS.map((item) => (
+                <div key={item.step} className="clean-step-card">
+                  <span className="clean-step-num font-heading">{item.step}</span>
+                  <h3 className="font-heading clean-step-title">{item.title}</h3>
+                  <p className="clean-step-desc">{item.desc}</p>
+                </div>
               ))}
             </div>
           </Container>
         </section>
 
-        {/* ══ 4. FEATURED PRODUCTS ═════════════════════════════ */}
-        <section
-          id="featured"
-          className="hp2-products-section"
-          aria-labelledby="featured-heading"
-        >
+        {/* ══════════════════════════════════════════════════════
+            4. FEATURED PRODUCTS
+        ══════════════════════════════════════════════════════ */}
+        <section id="products" className="clean-section">
           <Container>
-            <Reveal>
-              <div className="hp2-section-head">
-                <div>
-                  <p className="eyebrow">Selected Prints</p>
-                  <h2
-                    id="featured-heading"
-                    className="hp2-section-title font-heading"
-                  >
-                    Featured Products
-                  </h2>
-                </div>
-                <Link
-                  href="/shop"
-                  className="hp2-section-link"
-                  aria-label="View all products"
-                >
-                  View all
-                  <ArrowRight size={14} weight="bold" aria-hidden="true" />
-                </Link>
+            <div className="clean-section-header">
+              <div>
+                <h2 className="font-heading clean-section-title">Ready to ship, made in Kolkata.</h2>
+                <p className="clean-section-subtitle">
+                  In stock and dispatched fast. No waiting for a quote.
+                </p>
               </div>
-            </Reveal>
+              <Link href="/shop" className="clean-section-link">
+                Browse all products <ArrowRight size={14} />
+              </Link>
+            </div>
 
             {loadingProducts ? (
-              <div
-                className="hp2-product-grid"
-                aria-label="Loading products"
-                role="status"
-              >
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="product-skeleton" aria-hidden="true">
-                    <div className="skeleton-block" />
-                    <div className="skeleton-line" />
-                    <div className="skeleton-line skeleton-line-short" />
+              <div className="clean-products-grid">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="clean-product-skeleton">
+                    <div className="skeleton-thumb" />
+                    <div className="skeleton-text" />
+                    <div className="skeleton-text skeleton-text--short" />
                   </div>
                 ))}
               </div>
-            ) : productError ? (
-              <div className="hp2-empty-state" role="alert">
-                <Package size={40} weight="duotone" aria-hidden="true" />
-                <p className="hp2-empty-title">
-                  Products temporarily unavailable
-                </p>
-                <p className="hp2-empty-body">
-                  We&apos;re having trouble loading products right now. Please
-                  refresh or try again shortly.
-                </p>
-                <button
-                  type="button"
-                  className="hp2-btn-ghost"
-                  onClick={() => window.location.reload()}
-                >
-                  Refresh page
-                </button>
-              </div>
-            ) : featuredProducts.length === 0 ? (
-              <div className="hp2-empty-state">
-                <Package size={40} weight="duotone" aria-hidden="true" />
-                <p className="hp2-empty-title">
-                  Our first products are being prepared
-                </p>
-                <p className="hp2-empty-body">
-                  We&apos;re stocking our shelves. In the meantime, you can
-                  place a custom order for anything you need made.
-                </p>
-                <Link href="/custom-orders" className="hp2-btn-primary">
-                  Place a custom order
-                  <CaretRight size={14} weight="fill" aria-hidden="true" />
-                </Link>
+            ) : products.length > 0 ? (
+              <div className="clean-products-grid">
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
               </div>
             ) : (
-              <div className="hp2-product-grid">
-                {featuredProducts.map((product, i) => (
-                  <Reveal key={product._id} delay={i * 45}>
-                    <ProductCard product={product} />
-                  </Reveal>
-                ))}
+              <div className="clean-empty-state">
+                <Package size={36} />
+                <p>New studio products are currently in production.</p>
+                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                  Get a Free Quote
+                </Link>
               </div>
             )}
           </Container>
         </section>
 
-        {/* ══ 5. CUSTOM ORDERS ═════════════════════════════════ */}
-        <section
-          className="hp2-custom-section"
-          aria-labelledby="custom-heading"
-        >
-          <Container className="hp2-custom-inner">
-            {/* Image column */}
-            <Reveal className="hp2-custom-visual">
-              <ImgPlaceholder
-                filename="custom-order.jpg"
-                width={900}
-                height={1100}
-                label="Custom order — CAD design to printed part"
-                className="hp2-custom-img-block"
-              />
-            </Reveal>
-
-            {/* Copy column */}
-            <div className="hp2-custom-copy">
-              <Reveal>
-                <p className="eyebrow hp2-custom-eyebrow">Custom 3D Printing</p>
-                <h2
-                  id="custom-heading"
-                  className="hp2-custom-title font-heading"
-                >
-                  Imagine It. <br />
-                  We&apos;ll Help You Make It.
+        {/* ══════════════════════════════════════════════════════
+            5. CUSTOM ORDERS
+        ══════════════════════════════════════════════════════ */}
+        <section id="custom-printing" className="clean-section clean-section--alt">
+          <Container>
+            <div className="clean-custom-box">
+              <div className="clean-custom-copy">
+                <span className="clean-eyebrow clean-eyebrow--accent">Custom Orders</span>
+                <h2 className="font-heading clean-custom-title">
+                  Have an idea or a broken part? Start here.
                 </h2>
-                <p className="hp2-custom-body">
-                  Share an idea, photograph, sketch, or functional requirement.
-                  We consult with you, help develop the design, select the
-                  printing process and material, manufacture the object, and
-                  arrange delivery.
+                <p className="clean-custom-desc">
+                  You don’t need a 3D file. Send a sketch, photos, measurements or the physical part. We’ll tell you honestly what’s possible, build the model, and quote you clearly.
                 </p>
-              </Reveal>
 
-              <ol
-                className="hp2-process-list"
-                aria-label="Custom order process"
-              >
-                {PROCESS_STEPS.map((step, i) => (
-                  <Reveal key={step.number} delay={i * 70}>
-                    <li className="hp2-process-step">
-                      <span className="hp2-step-number" aria-hidden="true">
-                        {step.number}
-                      </span>
-                      <div className="hp2-step-content">
-                        <h3 className="hp2-step-title font-heading">
-                          {step.title}
-                        </h3>
-                        <p className="hp2-step-body">{step.body}</p>
+                <div className="clean-custom-points">
+                  <div className="clean-point">
+                    <Check size={18} weight="bold" />
+                    <div>
+                      <strong>We design it for you.</strong>
+                      <span>Only have an idea? We’ll model it.</span>
+                    </div>
+                  </div>
+                  <div className="clean-point">
+                    <Check size={18} weight="bold" />
+                    <div>
+                      <strong>Honest, upfront pricing.</strong>
+                      <span>Based on material and machine time. No hidden fees.</span>
+                    </div>
+                  </div>
+                  <div className="clean-point">
+                    <Check size={18} weight="bold" />
+                    <div>
+                      <strong>Fast turnaround.</strong>
+                      <span>Most custom orders ship in 2–5 business days.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="clean-custom-cta-area">
+                  <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                    Request My Free Quote <ArrowRight size={16} />
+                  </Link>
+                  <span className="clean-custom-note">Free review · No commitment · Fast response</span>
+                </div>
+              </div>
+
+              <div className="clean-custom-info-card">
+                <h3 className="font-heading">Files we accept</h3>
+                <p>If you already have a 3D model or reference, you can upload:</p>
+                <div className="clean-formats-tags">
+                  <span>.STL</span>
+                  <span>.STEP</span>
+                  <span>.STP</span>
+                  <span>.OBJ</span>
+                  <span>.3MF</span>
+                  <span>.PDF</span>
+                  <span>.JPG</span>
+                  <span>.PNG</span>
+                </div>
+
+                <h3 className="font-heading" style={{ marginTop: "1.5rem" }}>Common applications</h3>
+                <ul className="clean-app-list">
+                  <li>• Custom gifts &amp; 3D lithophane lamps</li>
+                  <li>• Detailed miniatures and idols</li>
+                  <li>• Robotics brackets &amp; drone arms</li>
+                  <li>• Obsolete replacement plastic parts</li>
+                  <li>• Prototype enclosures and fit checks</li>
+                </ul>
+              </div>
+            </div>
+          </Container>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            6. WHY PEOPLE TRUST PROMETHIX3D
+        ══════════════════════════════════════════════════════ */}
+        <section id="why-us" className="clean-section">
+          <Container>
+            <div className="clean-section-header clean-section-header--center">
+              <h2 className="font-heading clean-section-title">Real makers. Real workshop. Real accountability.</h2>
+              <p className="clean-section-subtitle">
+                A dedicated Indian 3D printing workshop built around craftsmanship, honest communication, and reliable turnaround.
+              </p>
+            </div>
+
+            <div className="clean-why-grid">
+              {WHY_CHOOSE_US.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <div key={i} className="clean-why-card">
+                    <div className="clean-why-icon">
+                      <Icon size={24} weight="bold" />
+                    </div>
+                    <h3 className="font-heading clean-why-title">{item.title}</h3>
+                    <p className="clean-why-desc">{item.desc}</p>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Verifiable Proof Metrics */}
+            <div className="clean-proof-bar">
+              <div>
+                <span className="clean-proof-stat font-heading">150+</span>
+                <span className="clean-proof-label">Custom Orders Delivered</span>
+              </div>
+              <div>
+                <span className="clean-proof-stat font-heading">± 0.08 mm</span>
+                <span className="clean-proof-label">Caliper-Inspected Tolerances</span>
+              </div>
+              <div>
+                <span className="clean-proof-stat font-heading">100% In-House</span>
+                <span className="clean-proof-label">Kolkata Studio Production</span>
+              </div>
+            </div>
+
+            {/* Customer Reviews for Trust Proof */}
+            <div className="clean-reviews-grid">
+              {CUSTOMER_REVIEWS.map((rev, idx) => (
+                <div key={idx} className="clean-review-card">
+                  <p className="clean-review-text">&ldquo;{rev.comment}&rdquo;</p>
+                  <div>
+                    <span className="clean-review-author">{rev.name}</span>
+                    <span className="clean-review-location">{rev.city} · {rev.project}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            7. OUR STORY & ETHOS (About Promethix3D)
+        ══════════════════════════════════════════════════════ */}
+        <section id="about" className="clean-section clean-about-section">
+          <Container>
+            <div className="clean-section-header">
+              <span className="clean-eyebrow">OUR STORY &amp; ETHOS</span>
+              <h2 className="font-heading clean-section-title">
+                Crafting happiness, one layer at a time.
+              </h2>
+              <p className="clean-section-subtitle" style={{ maxWidth: "48rem" }}>
+                Promethix3D was founded with a singular conviction: digital ideas deserve physical form without industrial barriers. Based at IEM Management House in Kolkata, we bridge the gap between creative imagination and physical reality through advanced additive manufacturing.
+              </p>
+            </div>
+
+            <div className="about-grid">
+              <div className="about-card">
+                <span className="about-step font-heading">01</span>
+                <h3 className="font-heading about-card-title">Bespoke Engineering</h3>
+                <p className="about-card-desc">
+                  Whether it is a custom mechanical mount for robotics, a rapid prototype for a startup, or an intricate art piece, we calibrate print speed, infill geometry, and layer adhesion to meet structural requirements.
+                </p>
+              </div>
+
+              <div className="about-card">
+                <span className="about-step font-heading">02</span>
+                <h3 className="font-heading about-card-title">Dual Technologies</h3>
+                <p className="about-card-desc">
+                  We operate high-precision FDM filament systems (using PLA, PETG, ABS, and Carbon-Fiber composites) alongside ultra-detailed UV SLA resin printers achieving 0.05mm layer resolution.
+                </p>
+              </div>
+
+              <div className="about-card">
+                <span className="about-step font-heading">03</span>
+                <h3 className="font-heading about-card-title">Pan-India Reach</h3>
+                <p className="about-card-desc">
+                  From Kolkata, we deliver to all 28 Indian states with dedicated tracking and protective multi-layer packaging. Every item undergoes rigorous manual dimensional checks before dispatch.
+                </p>
+              </div>
+            </div>
+
+            <div className="about-connect-section">
+              <div className="about-contact-info">
+                <span className="clean-eyebrow">Studio Location</span>
+                <h3 className="font-heading about-connect-title">Visit or Connect</h3>
+                <p className="about-connect-sub">
+                  We welcome custom project consultations, student projects, prototyping inquiries, and corporate bulk orders.
+                </p>
+                <div className="about-contact-list">
+                  <div className="about-contact-item">
+                    <MapPin size={20} className="about-contact-icon" />
+                    <span>IEM Management House, D-1, Street No. 13, EP Block, Sector V, Bidhannagar, Kolkata, West Bengal 700091</span>
+                  </div>
+                  <div className="about-contact-item">
+                    <PhoneCall size={20} className="about-contact-icon" />
+                    <a href="tel:+919832769269">+91 98327 69269</a>
+                  </div>
+                  <div className="about-contact-item">
+                    <EnvelopeSimple size={20} className="about-contact-icon" />
+                    <a href="mailto:promethix3d@gmail.com">promethix3d@gmail.com</a>
+                  </div>
+                </div>
+              </div>
+
+              <div className="about-cta-card">
+                <span className="clean-eyebrow">Start Fabrication</span>
+                <h3 className="font-heading about-cta-heading">Have a project in mind?</h3>
+                <p className="about-cta-text">Send us your concept or 3D model for a personalized quote.</p>
+                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                  Get a Free Quote <ArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+          </Container>
+        </section>
+
+        {/* ══════════════════════════════════════════════════════
+            8. FAQS (Practical, Direct Answers)
+        ══════════════════════════════════════════════════════ */}
+        <section id="faqs" className="clean-section clean-section--alt">
+          <Container className="clean-faq-container">
+            <div className="clean-section-header clean-section-header--center">
+              <h2 className="font-heading clean-section-title">Frequently asked questions</h2>
+              <p className="clean-section-subtitle">
+                Clear answers to common questions about pricing, materials, and turnaround.
+              </p>
+            </div>
+
+            <div className="clean-faq-list">
+              {FAQS.map((faq, index) => {
+                const isOpen = openFaq === index;
+                return (
+                  <div key={index} className={`clean-faq-item ${isOpen ? "is-open" : ""}`}>
+                    <button
+                      type="button"
+                      className="clean-faq-question"
+                      onClick={() => setOpenFaq(isOpen ? null : index)}
+                      aria-expanded={isOpen}
+                    >
+                      <span>{faq.q}</span>
+                      <CaretDown size={18} className="clean-faq-caret" />
+                    </button>
+                    {isOpen && (
+                      <div className="clean-faq-answer">
+                        <p>{faq.a}</p>
                       </div>
-                    </li>
-                  </Reveal>
-                ))}
-              </ol>
-
-              <Reveal delay={300}>
-                <Link href="/custom-orders" className="hp2-btn-primary">
-                  Request a Custom Print
-                  <CaretRight size={14} weight="fill" aria-hidden="true" />
-                </Link>
-              </Reveal>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </Container>
         </section>
 
-        {/* ══ 6. FDM & SLA PRINTING ════════════════════════════ */}
-        <section
-          className="hp2-process-section"
-          aria-labelledby="process-heading"
-        >
+        {/* ══════════════════════════════════════════════════════
+            8. FINAL CTA (Single Clear Route)
+        ══════════════════════════════════════════════════════ */}
+        <section className="clean-final-cta-section">
           <Container>
-            <Reveal>
-              <div className="hp2-section-head">
-                <div>
-                  <p className="eyebrow">Technology</p>
-                  <h2
-                    id="process-heading"
-                    className="hp2-section-title font-heading"
-                  >
-                    Two Printing Processes. <br className="hp2-section-br" />
-                    More Ways to Create.
-                  </h2>
-                </div>
-              </div>
-            </Reveal>
-
-            <div className="hp2-process-panels">
-              {/* FDM Panel */}
-              <Reveal className="hp2-process-panel">
-                <div className="hp2-process-panel-image">
-                  <ImgPlaceholder
-                    filename="fdm-printer.jpg"
-                    width={1200}
-                    height={800}
-                    label="FDM — Filament printer in action"
-                    className="hp2-process-img-block"
-                  />
-                </div>
-                <div className="hp2-process-panel-copy">
-                  <span className="hp2-process-tag">FDM</span>
-                  <h3 className="hp2-process-panel-title font-heading">
-                    Fused Deposition Modeling
-                  </h3>
-                  <p className="hp2-process-panel-desc">
-                    The workhorse of 3D printing. Excellent for functional
-                    components, prototypes, mechanical parts, enclosures,
-                    decorative objects, and larger prints. Strong, practical,
-                    and available in a wide range of materials.
-                  </p>
-                  <div
-                    className="hp2-material-chips"
-                    aria-label="Available FDM materials"
-                  >
-                    {FDM_MATERIALS.map((m) => (
-                      <span key={m} className="hp2-material-chip">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </Reveal>
-
-              {/* SLA Panel */}
-              <Reveal delay={80} className="hp2-process-panel">
-                <div className="hp2-process-panel-image">
-                  <ImgPlaceholder
-                    filename="sla-miniatures.jpg"
-                    width={1200}
-                    height={800}
-                    label="SLA — Resin printer and detailed miniatures"
-                    className="hp2-process-img-block"
-                  />
-                </div>
-                <div className="hp2-process-panel-copy">
-                  <span className="hp2-process-tag hp2-process-tag--sla">
-                    SLA
-                  </span>
-                  <h3 className="hp2-process-panel-title font-heading">
-                    Resin 3D Printing
-                  </h3>
-                  <p className="hp2-process-panel-desc">
-                    Photopolymer resin cured by UV light at ultra-fine
-                    resolution. Best for detailed miniatures, figurines,
-                    intricate models, precision visual prototypes, and smooth
-                    surface finishes. Results FDM cannot match in detail.
-                  </p>
-                  <div
-                    className="hp2-material-chips"
-                    aria-label="Available SLA materials"
-                  >
-                    {SLA_MATERIALS.map((m) => (
-                      <span key={m} className="hp2-material-chip">
-                        {m}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="hp2-process-note">
-                    Material availability may vary. Contact us for current
-                    options.
-                  </p>
-                </div>
-              </Reveal>
-            </div>
-          </Container>
-        </section>
-
-        {/* ══ 7. BRAND STATEMENT ═══════════════════════════════ */}
-        <section className="hp2-statement" aria-labelledby="statement-heading">
-          <Container>
-            <Reveal>
-              <p className="eyebrow hp2-statement-eyebrow">
-                The Promethix3D Promise
+            <div className="clean-final-cta-box">
+              <h2 className="font-heading clean-final-title">
+                Ready to see your idea in your hands?
+              </h2>
+              <p className="clean-final-desc">
+                Tell us what you have in mind. We’ll reply with a clear, fixed quote and no obligation.
               </p>
-              <blockquote
-                id="statement-heading"
-                className="hp2-statement-quote font-heading"
-              >
-                From a single prototype to bulk production — we engineer precision objects that push the limits of additive manufacturing and deliver them to your door, anywhere in India or the world.
-              </blockquote>
-              <div className="hp2-statement-ctas">
-                <Link href="/shop" className="hp2-btn-primary hp2-statement-cta">
-                  Browse the shop
-                  <CaretRight size={14} weight="fill" aria-hidden="true" />
+              <div className="clean-final-buttons">
+                <Link href="/custom-orders" className="clean-btn clean-btn--primary">
+                  Get a Free Quote <ArrowRight size={16} />
                 </Link>
-                <Link href="/custom-orders" className="hp2-btn-ghost">
-                  Start a custom order
+                <Link href="/shop" className="clean-btn clean-btn--secondary">
+                  Shop Ready-Made Products
                 </Link>
               </div>
-            </Reveal>
-          </Container>
-        </section>
-
-      </main>
-
-      {/* ══ FOOTER ════════════════════════════════════════════ */}
-      <footer className="hp2-footer" aria-label="Site footer">
-        <Container className="hp2-footer-inner">
-          <div className="hp2-footer-brand">
-            <Link href="/" className="hp2-footer-wordmark font-heading">
-              Promethix3D
-            </Link>
-            <p className="hp2-footer-tagline">Where Imagination Takes Shape.</p>
-            <div className="hp2-footer-contact">
-              <p>
-                <MapPin size={12} aria-hidden="true" />
-                Kolkata, India
-              </p>
-              <p>
-                <PhoneCall size={12} aria-hidden="true" />
-                <a href="tel:+919832769269">+91 98327 69269</a>
-              </p>
-              <p>
+              <p className="clean-final-contact">
+                Prefer to talk? Call or WhatsApp{" "}
+                <a href="tel:+919832769269">+91 98327 69269</a> or email{" "}
                 <a href="mailto:promethix3d@gmail.com">promethix3d@gmail.com</a>
               </p>
+            </div>
+          </Container>
+        </section>
+      </main>
+
+      {/* ══════════════════════════════════════════════════════
+          FOOTER (Simple, Grounded, Reassuring)
+      ══════════════════════════════════════════════════════ */}
+      <footer className="clean-footer">
+        <Container className="clean-footer-inner">
+          <div className="clean-footer-brand">
+            <Link href="/" className="clean-footer-logo font-heading">
+              Promethix<strong>3D</strong>
+            </Link>
+            <p className="clean-footer-tagline">
+              Custom 3D printing and CAD modelling studio based in Kolkata, India. Shipping nationwide.
+            </p>
+            <div className="clean-footer-address">
               <p>
-                <a
-                  href="https://instagram.com/promethix3d"
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Instagram / @promethix3d
-                </a>
+                <strong>Studio Address:</strong><br />
+                IEM Management House, D-1, Street No. 13, EP Block,<br />
+                Sector V, Bidhannagar, Kolkata, West Bengal 700091
               </p>
-              <p>
-                <a
-                  href="https://youtube.com/@promethix3d"
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  YouTube / @promethix3d
-                </a>
+              <p style={{ marginTop: "0.5rem" }}>
+                <strong>Contact:</strong>{" "}
+                <a href="tel:+919832769269">+91 98327 69269</a> ·{" "}
+                <a href="mailto:promethix3d@gmail.com">promethix3d@gmail.com</a>
               </p>
             </div>
           </div>
 
-          <nav className="hp2-footer-nav-group" aria-label="Footer navigation">
-            <div className="hp2-footer-nav-col">
-              <p className="hp2-footer-nav-heading">Shop</p>
-              <Link href="/shop">All Products</Link>
-              <Link href="/shop#categories">Categories</Link>
-            </div>
-            <div className="hp2-footer-nav-col">
-              <p className="hp2-footer-nav-heading">Services</p>
+          <div className="clean-footer-links">
+            <div className="clean-footer-col">
+              <h4>Navigation</h4>
+              <Link href="/shop">Products</Link>
+              <Link href="/#categories">What We Print</Link>
               <Link href="/custom-orders">Custom Orders</Link>
-              <Link href="/about">About</Link>
+              <Link href="/#how-it-works">How It Works</Link>
+              <Link href="/#faqs">FAQs</Link>
             </div>
-            <div className="hp2-footer-nav-col">
-              <p className="hp2-footer-nav-heading">Account</p>
-              <Link href="/login">Login</Link>
-              <Link href="/signup">Sign up</Link>
-              <Link href="/cart">Cart</Link>
+
+            <div className="clean-footer-col">
+              <h4>Services</h4>
+              <Link href="/custom-orders">CAD 3D Modelling</Link>
+              <Link href="/custom-orders">Resin Printing (SLA)</Link>
+              <Link href="/custom-orders">Filament Printing (FDM)</Link>
+              <Link href="/custom-orders">Replacement Parts</Link>
             </div>
-          </nav>
+
+            <div className="clean-footer-col">
+              <h4>Connect</h4>
+              <a href="https://www.instagram.com/promethix3d/" target="_blank" rel="noreferrer">
+                Instagram (@promethix3d)
+              </a>
+              <Link href="/account">Customer Account</Link>
+            </div>
+          </div>
         </Container>
 
-        <Container className="hp2-footer-bottom">
-          <p className="hp2-footer-meta">
-            © {new Date().getFullYear()} Promethix3D. All rights reserved.
-          </p>
+        <Container className="clean-footer-bottom">
+          <p>© {new Date().getFullYear()} Promethix3D. All rights reserved.</p>
+          <p>Kolkata, West Bengal · Pan-India Delivery</p>
         </Container>
       </footer>
+
+      {/* ══════════════════════════════════════════════════════
+          FLOATING WHATSAPP BUTTON (Direct Customer Support)
+      ══════════════════════════════════════════════════════ */}
+      <a
+        href="https://wa.me/919832769269?text=Hi%20Promethix3D%2C%20I%20have%20an%20enquiry%20about%20a%203D%20print."
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Chat on WhatsApp with Promethix3D"
+        className="clean-whatsapp-float"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2ZM12.05 20.15C10.57 20.15 9.12 19.75 7.85 19L7.55 18.82L4.43 19.64L5.26 16.6L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.68 12.05 3.68C14.25 3.68 16.31 4.54 17.87 6.1C19.42 7.66 20.28 9.72 20.28 11.92C20.28 16.46 16.59 20.15 12.05 20.15ZM16.57 14.37C16.32 14.25 15.1 13.65 14.87 13.57C14.65 13.49 14.48 13.45 14.32 13.69C14.15 13.94 13.68 14.49 13.53 14.66C13.39 14.82 13.24 14.85 12.99 14.72C12.75 14.6 11.96 14.34 11.03 13.51C10.3 12.86 9.81 12.06 9.66 11.81C9.52 11.57 9.65 11.43 9.77 11.31C9.88 11.2 10.02 11.02 10.14 10.88C10.27 10.74 10.31 10.64 10.39 10.47C10.47 10.31 10.43 10.16 10.37 10.04C10.31 9.92 9.81 8.7 9.61 8.19C9.4 7.69 9.2 7.76 9.05 7.75C8.91 7.74 8.75 7.74 8.58 7.74C8.42 7.74 8.15 7.8 7.92 8.05C7.7 8.3 7.07 8.89 7.07 10.1C7.07 11.31 7.95 12.48 8.07 12.64C8.2 12.8 9.8 15.26 12.25 16.32C12.83 16.57 13.28 16.72 13.64 16.83C14.23 17.02 14.76 16.99 15.18 16.93C15.66 16.86 16.65 16.33 16.86 15.75C17.06 15.17 17.06 14.68 17 14.58C16.94 14.49 16.82 14.43 16.57 14.37Z" />
+        </svg>
+        <span className="clean-whatsapp-text">Chat on WhatsApp</span>
+      </a>
     </div>
   );
 }

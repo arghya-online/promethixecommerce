@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "motion/react";
 import { ArrowRight, Bell, ClipboardText, Cube, Gauge, List, MagnifyingGlass, Package, SignOut, Spinner, SquaresFour, Users, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,11 +11,31 @@ import { CloudinaryMedia } from "@/components/admin/cloudinary-media";
 import { ProductManager } from "@/components/admin/product-manager";
 import type { Category, Product } from "@/components/catalog/product-types";
 import { Container } from "@/components/layout/container";
+import { SiteHeader } from "@/components/navigation/site-header";
 import { authClient } from "@/src/lib/auth-client";
 
 type Banner = { _id: string; slot: "hero" | "promotion"; title: string; subtitle: string; image: string; href: string; isActive: boolean; sortOrder: number };
 type AdminOrder = { _id: string; total: number; paymentStatus: string; orderStatus: string; createdAt: string; razorpayOrderId?: string | null; items: Array<{ name: string; quantity: number; price: number }>; shippingAddress: { fullName: string; phone: string; city: string; postalCode: string } };
-type CustomRequest = { _id: string; name: string; email: string; phone: string; projectType: string; description: string; status: string; createdAt: string };
+type CustomRequest = {
+  _id: string;
+  referenceCode?: string;
+  name: string;
+  email: string;
+  phone: string;
+  projectTitle?: string;
+  projectType: string;
+  description: string;
+  quantity?: string;
+  dimensions?: string;
+  material?: string;
+  colorFinish?: string;
+  application?: string;
+  timeline?: string;
+  budget?: string;
+  fileUrls?: string[];
+  status: string;
+  createdAt: string;
+};
 type Overview = { stats: { totalOrders: number; paidRevenue: number; pendingOrders: number; lowStockProducts: number }; recentOrders: AdminOrder[]; pendingRequests: CustomRequest[] };
 type DashboardData = { products: Product[]; categories: Category[]; banners: Banner[] };
 type AdminTab = "overview" | "orders" | "requests" | "products" | "storefront" | "media";
@@ -99,9 +120,97 @@ export default function AdminClient() {
     setRequestMessage("Custom request updated.");
   }
 
-  if (session.isPending) return <div className="admin-shell"><Container><div className="detail-loading" role="status">Checking admin access…</div></Container></div>;
-  if (!session.data) return <div className="admin-shell"><Container className="admin-auth-layout"><div className="admin-auth-copy"><p className="eyebrow">Promethix3D / Admin</p><h1 className="font-heading page-title">Product control.</h1><p>Sign in with an administrator account to manage the catalogue.</p></div><div className="auth-card"><AuthForm mode="signin" redirectTo="/admin" /><p className="auth-switch">Customer account? <Link href="/login">Use customer sign in</Link></p></div></Container></div>;
-  if (!isAdmin) return <div className="admin-shell"><Container><div className="admin-denied" role="alert"><p className="eyebrow">Access restricted</p><h1 className="font-heading">This area is for administrators.</h1><p>Your customer account does not have access to the product dashboard.</p><div className="admin-denied-actions"><Link href="/account" className="button button-primary">Back to account <ArrowRight size={18} /></Link><button type="button" className="account-signout" onClick={() => void signOut()}>Sign out</button></div></div></Container></div>;
+  if (session.isPending) {
+    return (
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="auth-page">
+          <Container className="auth-layout" style={{ textAlign: "center" }}>
+            <Spinner className="spin" size={32} style={{ color: "#D9531E", margin: "0 auto 1rem" }} />
+            <p style={{ color: "#57534E", fontWeight: 500 }}>Verifying studio credentials…</p>
+          </Container>
+        </main>
+      </div>
+    );
+  }
+
+  if (!session.data) {
+    return (
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="auth-page">
+          <Container className="auth-layout">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{ width: "100%", maxWidth: "440px" }}
+            >
+              <div className="auth-intro">
+                <span className="auth-brand-badge font-heading">
+                  Promethix<strong>3D</strong>&nbsp;·&nbsp;Studio Admin
+                </span>
+                <p className="eyebrow">Studio Control</p>
+                <h1 className="font-heading page-title">Administrator Portal</h1>
+                <p>Sign in with your studio account to manage products, quotes, and storefront operations.</p>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.4, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+                className="auth-card"
+              >
+                <AuthForm mode="signin" redirectTo="/admin" />
+                <p className="auth-switch">
+                  Customer account? <Link href="/login">Use customer sign in</Link>
+                </p>
+              </motion.div>
+            </motion.div>
+          </Container>
+        </main>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="site-shell">
+        <SiteHeader />
+        <main className="auth-page">
+          <Container className="auth-layout">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="auth-card"
+              style={{ textAlign: "center" }}
+            >
+              <p className="eyebrow">Access Restricted</p>
+              <h1 className="font-heading page-title" style={{ fontSize: "1.75rem", marginBottom: "0.75rem" }}>
+                Admin Privileges Required
+              </h1>
+              <p style={{ color: "#57534E", fontSize: "0.95rem", lineHeight: 1.6, marginBottom: "1.75rem" }}>
+                You are currently signed in as <strong>{currentUser?.name || session.data.user.email}</strong>, which does not have administrator privileges.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <Link href="/account" className="clean-btn clean-btn--primary">
+                  Back to Customer Account <ArrowRight size={16} />
+                </Link>
+                <button
+                  type="button"
+                  className="clean-btn clean-btn--secondary"
+                  onClick={() => void signOut()}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </motion.div>
+          </Container>
+        </main>
+      </div>
+    );
+  }
 
   const activeProducts = data?.products.filter((product) => product.isActive).length ?? 0;
   const activeCategories = data?.categories.filter((category) => category.isActive).length ?? 0;
@@ -133,7 +242,116 @@ function OrderDialog({ order, onClose }: { order: AdminOrder; onClose: () => voi
 
 function RequestsPanel({ requests, onStatusChange, message }: { requests: CustomRequest[]; onStatusChange: (request: CustomRequest, status: string) => void; message: string }) {
   const statuses = ["new", "reviewing", "quoted", "approved", "in_production", "completed", "rejected", "cancelled"];
-  return <div className="admin-panel"><div className="admin-panel-heading"><h2 className="font-heading">Request pipeline</h2><span>{requests.length} requests</span></div>{message ? <p className="admin-feedback" role="status">{message}</p> : null}{requests.length ? <div className="admin-request-grid">{requests.map((request) => <article className="admin-request-card" key={request._id}><div className="admin-request-card-top"><span className={`admin-status is-${request.status}`}>{request.status.replace("_", " ")}</span><time>{new Date(request.createdAt).toLocaleDateString("en-IN")}</time></div><h3>{request.name}</h3><p>{request.projectType} · {request.email} · {request.phone}</p><p>{request.description}</p><select value={request.status} onChange={(event) => void onStatusChange(request, event.target.value)} aria-label={`Update request ${request._id}`}>{statuses.map((status) => <option key={status} value={status}>{status.replace("_", " ")}</option>)}</select></article>)}</div> : <EmptyState text="No custom requests found." />}</div>;
+  return (
+    <div className="admin-panel">
+      <div className="admin-panel-heading">
+        <div>
+          <p className="eyebrow">Custom Order Inquiries</p>
+          <h2 className="font-heading">Request pipeline</h2>
+        </div>
+        <span>{requests.length} inquiries received</span>
+      </div>
+      {message ? <p className="admin-feedback admin-feedback-success" role="status">{message}</p> : null}
+      {requests.length ? (
+        <div className="admin-request-grid">
+          {requests.map((request) => (
+            <article className="admin-request-card" key={request._id}>
+              <div className="admin-request-card-top">
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  <span className={`admin-status is-${request.status}`}>{request.status.replace("_", " ")}</span>
+                  {request.referenceCode ? (
+                    <span style={{ fontSize: "0.75rem", fontFamily: "var(--font-mono, monospace)", background: "rgba(0,0,0,0.05)", padding: "2px 6px", borderRadius: "4px" }}>
+                      {request.referenceCode}
+                    </span>
+                  ) : null}
+                </div>
+                <time>{new Date(request.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
+              </div>
+
+              <h3 style={{ margin: "0.5rem 0 0.25rem", fontSize: "1.1rem" }}>
+                {request.projectTitle || request.name}
+              </h3>
+              
+              <div style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", display: "flex", flexWrap: "wrap", gap: "0.75rem", margin: "0.25rem 0 0.75rem" }}>
+                <span><strong>Client:</strong> {request.name}</span>
+                <span><strong>Email:</strong> <a href={`mailto:${request.email}`} style={{ textDecoration: "underline" }}>{request.email}</a></span>
+                <span><strong>Phone:</strong> <a href={`tel:${request.phone}`} style={{ textDecoration: "underline" }}>{request.phone}</a></span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.5rem", fontSize: "0.8rem", background: "var(--surface-subtle, #f5f3ee)", padding: "0.6rem 0.75rem", borderRadius: "8px", margin: "0.5rem 0" }}>
+                <div><span style={{ color: "var(--foreground-subtle)" }}>Type:</span> <strong>{request.projectType}</strong></div>
+                {request.quantity ? <div><span style={{ color: "var(--foreground-subtle)" }}>Qty:</span> <strong>{request.quantity}</strong></div> : null}
+                {request.material ? <div><span style={{ color: "var(--foreground-subtle)" }}>Material:</span> <strong>{request.material}</strong></div> : null}
+                {request.colorFinish ? <div><span style={{ color: "var(--foreground-subtle)" }}>Finish:</span> <strong>{request.colorFinish}</strong></div> : null}
+                {request.dimensions ? <div><span style={{ color: "var(--foreground-subtle)" }}>Dims:</span> <strong>{request.dimensions}</strong></div> : null}
+                {request.budget ? <div><span style={{ color: "var(--foreground-subtle)" }}>Budget:</span> <strong>{request.budget}</strong></div> : null}
+                {request.timeline ? <div><span style={{ color: "var(--foreground-subtle)" }}>Timeline:</span> <strong>{request.timeline}</strong></div> : null}
+              </div>
+
+              {request.application ? (
+                <p style={{ fontSize: "0.825rem", margin: "0.35rem 0" }}>
+                  <strong style={{ color: "var(--foreground-subtle)" }}>Application:</strong> {request.application}
+                </p>
+              ) : null}
+
+              <p style={{ fontSize: "0.875rem", margin: "0.5rem 0", lineHeight: 1.5 }}>
+                {request.description}
+              </p>
+
+              {request.fileUrls && request.fileUrls.length > 0 ? (
+                <div style={{ margin: "0.75rem 0", padding: "0.5rem 0", borderTop: "1px dashed var(--border)" }}>
+                  <p style={{ fontSize: "0.75rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--foreground-muted)", marginBottom: "0.35rem" }}>
+                    Attachments ({request.fileUrls.length})
+                  </p>
+                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                    {request.fileUrls.map((url, idx) => (
+                      <a
+                        key={idx}
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          fontSize: "0.75rem",
+                          padding: "0.25rem 0.5rem",
+                          borderRadius: "4px",
+                          background: "var(--surface, #fff)",
+                          border: "1px solid var(--border)",
+                          color: "var(--accent, #d9531e)",
+                        }}
+                      >
+                        Attachment {idx + 1} ↗
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.8rem", color: "var(--foreground-subtle)" }}>Status:</span>
+                <select
+                  value={request.status}
+                  onChange={(event) => void onStatusChange(request, event.target.value)}
+                  aria-label={`Update request ${request._id}`}
+                  style={{ padding: "0.25rem 0.5rem", fontSize: "0.85rem", borderRadius: "6px" }}
+                >
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status.replace("_", " ")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyState text="No custom requests found." />
+      )}
+    </div>
+  );
 }
 
 function EmptyState({ text }: { text: string }) {

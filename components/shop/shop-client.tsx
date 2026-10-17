@@ -35,7 +35,11 @@ export default function ShopClient() {
         throw new Error("Products could not be loaded");
       }
 
-      setProducts((data.products as Product[]).filter((product) => product.isActive === true));
+      setProducts(
+        (data.products as Product[]).filter(
+          (product) => product.isActive === true,
+        ),
+      );
     } catch {
       setError(true);
     } finally {
@@ -55,7 +59,9 @@ export default function ShopClient() {
     const normalizedQuery = query.trim().toLowerCase();
     const filtered = normalizedQuery
       ? products.filter((product) =>
-          `${product.name} ${product.description} ${product.material ?? ""} ${product.dimensions ?? ""}`.toLowerCase().includes(normalizedQuery),
+          `${product.name} ${product.description} ${product.material ?? ""} ${product.dimensions ?? ""}`
+            .toLowerCase()
+            .includes(normalizedQuery),
         )
       : [...products];
 
@@ -73,12 +79,7 @@ export default function ShopClient() {
       <main>
         <section className="shop-intro">
           <Container>
-            <p className="eyebrow">The collection</p>
-            <h1 className="font-heading page-title">Objects for considered spaces.</h1>
-            <p className="page-intro">
-              A growing collection of useful, tactile pieces designed and 3D-printed by
-              Promethix3D.
-            </p>
+            <h3 className="shop-title">Shop</h3>
           </Container>
         </section>
 
@@ -95,14 +96,21 @@ export default function ShopClient() {
                   onChange={(event) => setQuery(event.target.value)}
                 />
                 {query ? (
-                  <button type="button" onClick={() => setQuery("")} aria-label="Clear search">
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                  >
                     <X size={17} aria-hidden="true" />
                   </button>
                 ) : null}
               </label>
               <label className="sort-field">
                 <span>Sort</span>
-                <select value={sort} onChange={(event) => setSort(event.target.value as SortOrder)}>
+                <select
+                  value={sort}
+                  onChange={(event) => setSort(event.target.value as SortOrder)}
+                >
                   <option value="newest">Newest</option>
                   <option value="price-low">Price: low to high</option>
                   <option value="price-high">Price: high to low</option>
@@ -134,9 +142,17 @@ export default function ShopClient() {
               </div>
             ) : visibleProducts.length === 0 ? (
               <div className="shop-state">
-                <p>{products.length === 0 ? "New objects are on the way." : "No products match your search."}</p>
+                <p>
+                  {products.length === 0
+                    ? "New objects are on the way."
+                    : "No products match your search."}
+                </p>
                 {query ? (
-                  <button type="button" className="text-button" onClick={() => setQuery("")}>
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setQuery("")}
+                  >
                     Clear search
                   </button>
                 ) : null}

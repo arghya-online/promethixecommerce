@@ -1,32 +1,21 @@
-import Link from "next/link";
-import { AuthForm } from "@/components/auth/auth-form";
-import { Container } from "@/components/layout/container";
-import { SiteHeader } from "@/components/navigation/site-header";
+import { AuthPageClient } from "@/components/auth/auth-page-client";
 
 export const metadata = {
-  title: "Create account",
+  title: "Create Account | Promethix3D",
   description: "Create a Promethix3D customer account.",
 };
 
 export default function SignupPage() {
   return (
-    <div className="site-shell">
-      <SiteHeader />
-      <main className="auth-page">
-        <Container className="auth-layout">
-          <div className="auth-intro">
-            <p className="eyebrow">Customer account</p>
-            <h1 className="font-heading page-title">Make it yours.</h1>
-            <p>Create an account to keep track of your Promethix3D orders.</p>
-          </div>
-          <div className="auth-card">
-            <AuthForm mode="signup" />
-            <p className="auth-switch">
-              Already have an account? <Link href="/login">Sign in</Link>
-            </p>
-          </div>
-        </Container>
-      </main>
-    </div>
+    <AuthPageClient
+      mode="signup"
+      eyebrow="Join Promethix3D"
+      title="Create account."
+      description="Keep track of your orders, custom fabrication requests, and fast re-ordering."
+      switchPrompt="Already have an account?"
+      switchLinkText="Sign in"
+      switchHref="/login"
+      redirectTo="/account"
+    />
   );
 }

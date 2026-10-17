@@ -7,6 +7,7 @@ const customOrderSchema = z.object({
   name: z.string().trim().min(2, "Name is required"),
   email: z.string().trim().email("Please enter a valid email"),
   phone: z.string().trim().min(7, "Phone number is required"),
+  projectTitle: z.string().trim().max(200).optional().or(z.literal("")),
   projectType: z.enum([
     "figurine",
     "gift",
@@ -16,10 +17,16 @@ const customOrderSchema = z.object({
     "prototype",
     "other",
   ]),
-  description: z.string().trim().min(20, "Please tell us more about your idea"),
+  description: z.string().trim().min(10, "Please tell us more about your idea"),
+  quantity: z.string().trim().max(100).optional().or(z.literal("")),
   dimensions: z.string().trim().max(200).optional().or(z.literal("")),
+  material: z.string().trim().max(200).optional().or(z.literal("")),
+  colorFinish: z.string().trim().max(200).optional().or(z.literal("")),
+  application: z.string().trim().max(500).optional().or(z.literal("")),
   timeline: z.string().trim().max(200).optional().or(z.literal("")),
   budget: z.string().trim().max(200).optional().or(z.literal("")),
+  fileUrls: z.array(z.string().url()).optional(),
+  referenceCode: z.string().trim().optional(),
 });
 
 const updateCustomOrderSchema = z.object({
@@ -47,12 +54,20 @@ export async function POST(request: Request) {
 
     await connectDB();
 
-    const inquiry = await CustomOrder.create(parsed.data);
+    const referenceCode =
+      parsed.data.referenceCode?.trim() ||
+      `PX-${Date.now().toString().slice(-4)}${Math.floor(100 + Math.random() * 900)}`;
+
+    const inquiry = await CustomOrder.create({
+      ...parsed.data,
+      referenceCode,
+    });
 
     return Response.json(
       {
         success: true,
         message: "Your custom print inquiry has been received.",
+        referenceCode,
         inquiry,
       },
       { status: 201 },
