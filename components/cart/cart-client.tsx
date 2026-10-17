@@ -67,8 +67,7 @@ export default function CartClient() {
       ) ?? 0,
     [cart],
   );
-  const shipping = subtotal >= 2000 ? 0 : subtotal > 0 ? 0 : 0;
-  const total = subtotal + shipping;
+  const total = subtotal;
 
   async function updateQuantity(productId: string, quantity: number) {
     if (quantity < 1) return;
@@ -252,12 +251,6 @@ export default function CartClient() {
                     <span>Subtotal</span>
                     <span>{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="summary-row">
-                    <span>Shipping</span>
-                    <span>
-                      {shipping === 0 ? "Free" : formatPrice(shipping)}
-                    </span>
-                  </div>
                   <div className="summary-total">
                     <span>Total</span>
                     <strong>{formatPrice(total)}</strong>
@@ -269,9 +262,7 @@ export default function CartClient() {
                     Continue to checkout{" "}
                     <ArrowRight size={18} aria-hidden="true" />
                   </Link>
-                  <p className="summary-note">
-                    Free shipping on orders over ₹2,000.
-                  </p>
+
                 </aside>
               </div>
             )}

@@ -79,9 +79,6 @@ const requiredFields: Array<keyof ShippingAddress> = [
   "country",
 ];
 
-function getShipping(subtotal: number) {
-  return subtotal >= 2000 ? 0 : subtotal > 0 ? 0 : 0;
-}
 
 export default function CheckoutClient() {
   const [cart, setCart] = useState<Cart | null>(null);
@@ -134,8 +131,7 @@ export default function CheckoutClient() {
       ) ?? 0,
     [cart],
   );
-  const shipping = getShipping(subtotal);
-  const total = subtotal + shipping;
+  const total = subtotal;
 
   function updateAddress(field: keyof ShippingAddress, value: string) {
     setAddress((current) => ({ ...current, [field]: value }));
@@ -537,10 +533,7 @@ export default function CheckoutClient() {
                 <span>Subtotal</span>
                 <span>{formatPrice(subtotal)}</span>
               </div>
-              <div className="summary-row">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
-              </div>
+
               <div className="summary-total">
                 <span>Total</span>
                 <strong>{formatPrice(total)}</strong>
