@@ -18,7 +18,13 @@ export const metadata: Metadata = {
     default: "Promethix3D",
     template: "%s | Promethix3D",
   },
-  description: "Thoughtful objects, made tangible.",
+  description:
+    "Promethix3d is a 3D printing service in Kolkata, India. We make gifts, figurines, working parts and prototypes.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
