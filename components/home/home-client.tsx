@@ -170,42 +170,29 @@ const WHYCHOOSEUS = [
     icon: Truck,
   },
 ];
-
 const CUSTOMER_REVIEWS = [
   {
-    name: "Debanjan M.",
-
+    name: "Sourav Chatterjee",
     city: "Kolkata, WB",
-
-    project: "Custom Replacement Motor Mount (PETG)",
-
+    project: "Custom 3D Printed Part",
     comment:
-      "Brought in a broken mount from a drone frame with caliper measurements. The replacement fit perfectly and the PETG print was even sturdier than the original.",
+      "Got a custom part printed for a small project. The fit was good and the finish was neat. Communication was smooth too.",
   },
-
   {
-    name: "Rohan S.",
-
-    city: "Bengaluru, KA",
-
-    project: "Functional Prototype Enclosure",
-
+    name: "Ananya Mukherjee",
+    city: "Kolkata, WB",
+    project: "Personalised Gift",
     comment:
-      "Dimensions on the STEP model matched within ±0.08 mm. Quick CAD clearance review and dispatch was super clean.",
+      "Ordered a personalised gift and really liked how it turned out. The detailing was nice, and ordering was pretty straightforward.",
   },
-
   {
-    name: "Priyanka D.",
-
-    city: "Pune, MH",
-
-    project: "Custom Lithophane Lamp",
-
+    name: "Ritwik Banerjee",
+    city: "Kolkata, WB",
+    project: "3D Printed Figurine",
     comment:
-      "The photo detail on the lamp came out sharp and clear. Delivered safely to Pune with solid shockproof packing.",
+      "The figurine came out really well. The details looked clean, and the final product was close to what I had in mind.",
   },
 ];
-
 const FAQS = [
   {
     q: "How much does a custom print cost?",
@@ -284,7 +271,6 @@ export default function HomeClient() {
       <SiteHeader />
       <main>
         <Hero />
-
         <section id="products" className="clean-section">
           <Container>
             <div className="clean-section-header">
@@ -337,59 +323,73 @@ export default function HomeClient() {
             )}
           </Container>
         </section>
-
-        <section id="categories" className="clean-section">
+        <section id="categories" className="clean-category-marquee">
           <Container>
-            <div className="clean-section-header">
-              <div>
-                <h2 className="font-heading clean-section-title">
-                  Whatever you imagine, we can make it real.
-                </h2>
-
-                <p className="clean-section-subtitle">
-                  From personalised gifts and event mementoes to functional
-                  mechanical components, we match each job to the right process.
-                </p>
-              </div>
-
-              <Link href="/shop" className="clean-section-link">
-                View all categories <ArrowRight size={14} />
-              </Link>
-            </div>
-
-            <div className="clean-categories-grid">
-              {DEFAULT_CATEGORIES.map((cat) => {
-                return (
-                  <Link
-                    key={cat.id}
-                    href={cat.href}
-                    className="clean-category-card"
-                  >
-                    <div className="clean-category-thumb">
+            <div className="clean-marquee-track">
+              {[0, 1].map((group) => (
+                <div
+                  key={group}
+                  className="clean-marquee-group"
+                  aria-hidden={group === 1}
+                >
+                  {DEFAULT_CATEGORIES.map((cat) => (
+                    <Link
+                      key={`${group}-${cat.id}`}
+                      href={cat.href}
+                      className="clean-marquee-card"
+                      tabIndex={group === 1 ? -1 : undefined}
+                      aria-label={group === 1 ? undefined : cat.name}
+                    >
                       <Image
                         src={cat.image}
-                        alt={cat.name}
+                        alt={group === 1 ? "" : cat.name}
                         fill
-                        priority={cat.id === "gifts"}
-                        sizes="(max-width: 768px) 100vw, 30vw"
-                        className="clean-category-thumb-img"
+                        priority={group === 0 && cat.id === "gifts"}
+                        sizes="(max-width: 600px) 72vw, (max-width: 1024px) 38vw, 24vw"
+                        className="clean-marquee-image"
                       />
+                    </Link>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+
+        {/* Customer Reviews */}
+        <section className="reviews-section" id="customer-reviews">
+          <Container>
+            <div className="reviews-heading">
+              <span className="reviews-eyebrow">CUSTOMER REVIEWS</span>
+
+              <h2 className="reviews-title">
+                Made with care.
+                <br />
+                <span>Loved by our customers.</span>
+              </h2>
+
+              <p className="reviews-subtitle">
+                A few words from people who trusted us with their ideas.
+              </p>
+            </div>
+
+            <div className="reviews-grid">
+              {CUSTOMER_REVIEWS.map((review, index) => (
+                <article
+                  className={`review-card review-card--${(index % 3) + 1}`}
+                  key={`${review.name}-${review.city}`}
+                >
+                  <div className="review-card-content">
+                    <div className="review-author">
+                      <h3 className="review-author-name">{review.name}</h3>
+
+                      <p className="review-author-location">{review.city}</p>
                     </div>
 
-                    <div className="clean-category-content">
-                      <h3 className="font-heading clean-category-name">
-                        {cat.name}
-                      </h3>
-
-                      <p className="clean-category-desc">{cat.description}</p>
-
-                      <span className="clean-category-action">
-                        {cat.actionLabel} <ArrowRight size={13} />
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
+                    <p className="review-comment">“{review.comment}”</p>
+                  </div>
+                </article>
+              ))}
             </div>
           </Container>
         </section>
@@ -424,7 +424,6 @@ export default function HomeClient() {
             </div>
           </Container>
         </section>
-
         <section
           id="custom-printing"
           className="clean-section clean-section--alt"
@@ -538,7 +537,6 @@ export default function HomeClient() {
             </div>
           </Container>
         </section>
-
         <section id="why-us" className="clean-section">
           <Container>
             <div className="clean-section-header clean-section-header--center">
@@ -550,26 +548,6 @@ export default function HomeClient() {
                 A dedicated Indian 3D printing workshop built around
                 craftsmanship, honest communication, and reliable turnaround.
               </p>
-            </div>
-
-            <div className="clean-why-grid">
-              {WHYCHOOSEUS.map((item, i) => {
-                const Icon = item.icon;
-
-                return (
-                  <div key={i} className="clean-why-card">
-                    <div className="clean-why-icon">
-                      <Icon size={24} weight="bold" />
-                    </div>
-
-                    <h3 className="font-heading clean-why-title">
-                      {item.title}
-                    </h3>
-
-                    <p className="clean-why-desc">{item.desc}</p>
-                  </div>
-                );
-              })}
             </div>
 
             <div className="clean-proof-bar">
@@ -615,7 +593,6 @@ export default function HomeClient() {
             </div>
           </Container>
         </section>
-
         <section id="about" className="clean-section clean-about-section">
           <Container>
             <div className="clean-section-header">
@@ -727,7 +704,6 @@ export default function HomeClient() {
             </div>
           </Container>
         </section>
-
         <section id="faqs" className="clean-section clean-section--alt">
           <Container className="clean-faq-container">
             <div className="clean-section-header clean-section-header--center">
@@ -754,7 +730,7 @@ export default function HomeClient() {
                       type="button"
                       className="clean-faq-question"
                       onClick={() => setOpenFaq(isOpen ? null : index)}
-                      _aria-expanded_={isOpen}
+                      aria-expanded={isOpen}
                     >
                       <span>{faq.q}</span>
 
@@ -772,7 +748,6 @@ export default function HomeClient() {
             </div>
           </Container>
         </section>
-
         <section className="clean-final-cta-section">
           <Container>
             <div className="clean-final-cta-box">

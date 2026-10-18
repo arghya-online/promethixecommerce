@@ -27,7 +27,7 @@ export function Hero() {
         <div className="clean-hero-copy">
           <p className="clean-eyebrow">CUSTOM 3D PRINTING · KOLKATA</p>
           <h1 id="hero-title" className="font-heading clean-hero-heading">
-            Your idea, <span>3D printed</span> to perfection.
+            You <span>Imagine</span> it. <br /> We'll make it.
           </h1>
           <p className="clean-hero-description">
             Gifts, figurines, working parts and prototypes. Send a sketch or a

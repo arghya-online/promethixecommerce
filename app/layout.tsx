@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import "./globals.css";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -33,6 +34,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         {children}
         <WhatsAppButton />
+        <GoogleAnalytics gaId="G-SV1M66T9HY" />
       </body>
     </html>
   );
