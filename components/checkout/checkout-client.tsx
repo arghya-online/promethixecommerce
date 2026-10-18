@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import {
   ArrowLeft,
+  Banknote,
   CheckCircle2,
   Lock,
   Loader2,
@@ -99,6 +100,9 @@ const requiredFields: Array<keyof ShippingAddress> = [
 export default function CheckoutClient() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [address, setAddress] = useState(initialAddress);
+  const [paymentMethod, setPaymentMethod] = useState<"online" | "cod">("online");
+  const [confirmedOrderId, setConfirmedOrderId] = useState("");
+  const [confirmedTotal, setConfirmedTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState("");
@@ -198,6 +202,34 @@ export default function CheckoutClient() {
     setPaymentState("processing");
     setError("");
 
+    // Handle Cash on Delivery flow
+    if (paymentMethod === "cod") {
+      try {
+        const orderResponse = await fetch("/api/orders", {
+          body: JSON.stringify({ shippingAddress: address, paymentMethod: "cod" }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const orderData = await orderResponse.json();
+        if (!orderResponse.ok || !orderData.success) {
+          throw new Error(orderData.message || "Could not place Cash on Delivery order.");
+        }
+
+        setConfirmedOrderId(orderData.order?._id || "");
+        setConfirmedTotal(orderData.order?.total || total);
+        setPaymentState("success");
+        setCart({ items: [] });
+        setPendingOrderId("");
+      } catch (reason: unknown) {
+        setPaymentState("failure");
+        setError(reason instanceof Error ? reason.message : "Could not complete Cash on Delivery order.");
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
+    // Online Payment via Razorpay
     let modalOpened = false;
 
     try {
@@ -205,7 +237,7 @@ export default function CheckoutClient() {
 
       if (!orderId) {
         const orderResponse = await fetch("/api/orders", {
-          body: JSON.stringify({ shippingAddress: address }),
+          body: JSON.stringify({ shippingAddress: address, paymentMethod: "online" }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
@@ -215,6 +247,8 @@ export default function CheckoutClient() {
         }
         orderId = orderData.order._id;
         setPendingOrderId(orderId);
+        setConfirmedOrderId(orderId);
+        setConfirmedTotal(orderData.order?.total || total);
       }
 
       const paymentResponse = await fetch("/api/payments/create-order", {
@@ -321,12 +355,36 @@ export default function CheckoutClient() {
               </div>
 
               <div className="space-y-2">
+                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
+                  paymentMethod === "cod" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                }`}>
+                  {paymentMethod === "cod" ? "Cash on Delivery" : "Online Payment Verified"}
+                </span>
                 <h2 className="font-heading font-bold text-2xl sm:text-3xl text-foreground">
                   Order Confirmed!
                 </h2>
-                <p className="text-xs sm:text-sm text-foreground-muted">
-                  Thank you for your order! We are slicing and queueing your print job in our Kolkata studio. You will receive real-time tracking updates as soon as it dispatches.
+                <p className="text-xs sm:text-sm text-foreground-muted leading-relaxed">
+                  {paymentMethod === "cod" ? (
+                    <>
+                      Thank you for your order! Your 3D print job is queued in our studio. Please keep{" "}
+                      <strong className="text-foreground">{formatPrice(confirmedTotal || total)}</strong> ready in cash or UPI
+                      when our courier partner arrives with your shockproof parcel.
+                    </>
+                  ) : (
+                    <>
+                      Thank you for your payment! We are slicing and queueing your print job in our Kolkata studio.
+                      You will receive real-time tracking updates as soon as it dispatches.
+                    </>
+                  )}
                 </p>
+
+                {confirmedOrderId ? (
+                  <div className="pt-2">
+                    <span className="font-mono text-xs text-foreground-subtle bg-secondary/70 py-1 px-3 rounded-lg border border-border inline-block">
+                      Reference: #{confirmedOrderId.slice(-8).toUpperCase()}
+                    </span>
+                  </div>
+                ) : null}
               </div>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -508,6 +566,87 @@ export default function CheckoutClient() {
                   </div>
                 </Card>
 
+                {/* Payment Method Selector Card */}
+                <Card className="bg-surface border-border rounded-xl p-6 sm:p-8 shadow-xs space-y-4">
+                  <div>
+                    <h2 className="font-heading font-bold text-xl text-foreground flex items-center gap-2">
+                      <CreditCard className="w-5 h-5 text-primary" />
+                      Payment Method
+                    </h2>
+                    <p className="text-xs text-foreground-muted mt-1">
+                      Select your preferred payment mode for this 3D print fulfillment.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    {/* Option 1: Razorpay Online */}
+                    <div
+                      onClick={() => setPaymentMethod("online")}
+                      className={`cursor-pointer border-2 rounded-xl p-4 transition-all relative flex flex-col justify-between ${
+                        paymentMethod === "online"
+                          ? "border-primary bg-primary/5 shadow-xs"
+                          : "border-border bg-surface hover:border-foreground-subtle/50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5 font-bold text-sm text-foreground">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              paymentMethod === "online" ? "border-primary" : "border-border-strong"
+                            }`}>
+                              {paymentMethod === "online" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            </div>
+                            <span>Online Payment</span>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            Instant
+                          </span>
+                        </div>
+                        <p className="text-xs text-foreground-muted pl-6 leading-relaxed">
+                          UPI (GPay, PhonePe, Paytm), Credit / Debit Cards, NetBanking.
+                        </p>
+                      </div>
+                      <div className="pl-6 pt-3 mt-3 border-t border-border/40 text-[11px] text-foreground-subtle flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                        <span>Instant order processing</span>
+                      </div>
+                    </div>
+
+                    {/* Option 2: Cash on Delivery */}
+                    <div
+                      onClick={() => setPaymentMethod("cod")}
+                      className={`cursor-pointer border-2 rounded-xl p-4 transition-all relative flex flex-col justify-between ${
+                        paymentMethod === "cod"
+                          ? "border-primary bg-primary/5 shadow-xs"
+                          : "border-border bg-surface hover:border-foreground-subtle/50"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2.5 font-bold text-sm text-foreground">
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                              paymentMethod === "cod" ? "border-primary" : "border-border-strong"
+                            }`}>
+                              {paymentMethod === "cod" && <div className="w-2 h-2 rounded-full bg-primary" />}
+                            </div>
+                            <span>Cash on Delivery</span>
+                          </div>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            Pay at Doorstep
+                          </span>
+                        </div>
+                        <p className="text-xs text-foreground-muted pl-6 leading-relaxed">
+                          Pay in cash or UPI when your shockproof parcel arrives.
+                        </p>
+                      </div>
+                      <div className="pl-6 pt-3 mt-3 border-t border-border/40 text-[11px] text-foreground-subtle flex items-center gap-1.5">
+                        <Banknote className="w-3.5 h-3.5 text-primary" />
+                        <span>Zero advance payment</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
                 {error && (
                   <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl flex items-center gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0" />
@@ -556,6 +695,12 @@ export default function CheckoutClient() {
                       <span>Shockproof Foam Box</span>
                       <span className="font-semibold text-emerald-600">Included</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span>Selected Payment</span>
+                      <span className="font-semibold text-foreground">
+                        {paymentMethod === "cod" ? "Cash on Delivery (Doorstep)" : "Razorpay Online"}
+                      </span>
+                    </div>
                   </div>
 
                   <Separator />
@@ -578,7 +723,16 @@ export default function CheckoutClient() {
                     {submitting ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                        <span>Opening Razorpay Gateway...</span>
+                        <span>
+                          {paymentMethod === "cod"
+                            ? "Placing COD Order..."
+                            : "Opening Razorpay Gateway..."}
+                        </span>
+                      </>
+                    ) : paymentMethod === "cod" ? (
+                      <>
+                        <Package className="w-4 h-4 mr-2" />
+                        <span>Place COD Order ({formatPrice(total)})</span>
                       </>
                     ) : (
                       <>
@@ -589,14 +743,29 @@ export default function CheckoutClient() {
                   </Button>
 
                   <div className="pt-2 space-y-1.5 text-[11px] text-foreground-subtle border-t border-border/80">
-                    <p className="flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>UPI, Cards, NetBanking, Wallets supported</span>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
-                      <span>256-bit encrypted Razorpay transaction</span>
-                    </p>
+                    {paymentMethod === "cod" ? (
+                      <>
+                        <p className="flex items-center gap-1.5">
+                          <Truck className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Pay in cash or UPI to courier agent upon arrival</span>
+                        </p>
+                        <p className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>Inspect package seals before handing payment</span>
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>UPI, Cards, NetBanking, Wallets supported</span>
+                        </p>
+                        <p className="flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span>256-bit encrypted Razorpay transaction</span>
+                        </p>
+                      </>
+                    )}
                   </div>
                 </Card>
               </div>

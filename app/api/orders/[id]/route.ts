@@ -128,9 +128,13 @@ export async function PATCH(
         { status: 400 },
       );
     }
+    const updateFields: Record<string, string> = {};
+    if (parsed.data.orderStatus) updateFields.orderStatus = parsed.data.orderStatus;
+    if (parsed.data.paymentStatus) updateFields.paymentStatus = parsed.data.paymentStatus;
+
     const order = await Order.findByIdAndUpdate(
       id,
-      { $set: { orderStatus: parsed.data.orderStatus } },
+      { $set: updateFields },
       { new: true, runValidators: true },
     );
 

@@ -32,6 +32,7 @@ type Order = {
   _id: string;
   createdAt: string;
   total: number;
+  paymentMethod?: "online" | "cod";
   paymentStatus: string;
   orderStatus: string;
   items: Array<{
@@ -281,6 +282,15 @@ export default function AccountClient() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {ord.paymentMethod === "cod" ? (
+                          <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-800 border-amber-200">
+                            Cash on Delivery
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] bg-emerald-50 text-emerald-800 border-emerald-200">
+                            Online
+                          </Badge>
+                        )}
                         {getStatusBadge(ord.paymentStatus)}
                         {getStatusBadge(ord.orderStatus)}
                       </div>

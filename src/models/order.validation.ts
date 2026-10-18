@@ -18,16 +18,27 @@ const shippingAddressSchema = z.object({
 // Validation rules for creating an order
 export const createOrderSchema = z.object({
   shippingAddress: shippingAddressSchema,
+  paymentMethod: z.enum(["online", "cod"]).default("online").optional(),
 });
 
 // Validation rules for admin order status updates
-export const updateOrderStatusSchema = z.object({
-  orderStatus: z.enum([
-    "pending",
-    "confirmed",
-    "processing",
-    "shipped",
-    "delivered",
-    "cancelled",
-  ]),
-});
+export const updateOrderStatusSchema = z
+  .object({
+    orderStatus: z
+      .enum([
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ])
+      .optional(),
+    paymentStatus: z
+      .enum(["pending", "paid", "failed", "refunded"])
+      .optional(),
+  })
+  .refine((data) => data.orderStatus !== undefined || data.paymentStatus !== undefined, {
+    message: "Either orderStatus or paymentStatus must be provided",
+  });
+

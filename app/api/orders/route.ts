@@ -136,6 +136,9 @@ export async function POST(req: Request) {
         reservedProducts.push({ id: item.product, quantity: item.quantity });
       }
 
+      const paymentMethod = validationResult.data.paymentMethod || "online";
+      const isCod = paymentMethod === "cod";
+
       // Create the order only after every item has been reserved atomically.
       const order = await Order.create({
         user: session.user.id,
@@ -144,8 +147,9 @@ export async function POST(req: Request) {
         subtotal,
         shippingCost,
         total,
+        paymentMethod,
         paymentStatus: "pending",
-        orderStatus: "pending",
+        orderStatus: isCod ? "confirmed" : "pending",
         inventoryReserved: true,
       });
 

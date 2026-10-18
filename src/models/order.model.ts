@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 // Defines the structure of an item inside an order
 export interface IOrderItem {
-  product: mongoose.Types.ObjectId;
+  product?: mongoose.Types.ObjectId | null;
   name: string;
   price: number;
   quantity: number;
@@ -31,6 +31,7 @@ export interface IOrder extends Document {
   subtotal: number;
   shippingCost: number;
   total: number;
+  paymentMethod: "online" | "cod" | "cash" | "upi" | "bank_transfer";
   paymentStatus: "pending" | "paid" | "failed" | "refunded";
   orderStatus:
     | "pending"
@@ -50,11 +51,12 @@ export interface IOrder extends Document {
 // Schema for individual order items
 const orderItemSchema = new Schema<IOrderItem>(
   {
-    // Product reference
+    // Product reference (optional for custom manual orders)
     product: {
       type: Schema.Types.ObjectId,
       ref: "Product",
-      required: true,
+      required: false,
+      default: null,
     },
 
     // Product name snapshot at the time of purchase
@@ -200,6 +202,13 @@ const orderSchema = new Schema<IOrder>(
       type: Number,
       required: true,
       min: 0,
+    },
+
+    // Payment method (online, Cash on Delivery, or manual direct)
+    paymentMethod: {
+      type: String,
+      enum: ["online", "cod", "cash", "upi", "bank_transfer"],
+      default: "online",
     },
 
     // Payment state

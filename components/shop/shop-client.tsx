@@ -177,27 +177,8 @@ export default function ShopClient() {
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pt-1">
                 <div>
                   <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-foreground">
-                    3D Printed Catalog
+                    Our Products
                   </h1>
-                  <p className="text-sm text-foreground-muted mt-1 max-w-xl">
-                    Artisan lithophane lamps, collectible figurines, mechanical parts, and décor crafted in our Kolkata studio.
-                  </p>
-                </div>
-
-                {/* Consultation Callout */}
-                <div className="bg-surface/90 border border-primary/25 rounded-xl px-4 py-3 flex items-center gap-3 shrink-0 shadow-xs backdrop-blur-xs">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                    <Layers className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs">
-                    <p className="font-bold text-foreground">Need a custom file printed?</p>
-                    <Link
-                      href="/custom-orders"
-                      className="text-primary font-semibold hover:underline"
-                    >
-                      Upload 3D CAD or Sketch &rarr;
-                    </Link>
-                  </div>
                 </div>
               </div>
             </div>
