@@ -1,24 +1,32 @@
 "use client";
 
-import {
-  ArrowClockwise,
-  ArrowRight,
-  CheckCircle,
-  Clock,
-  CreditCard,
-  Package,
-  SignOut,
-  Spinner,
-  ShoppingBag,
-  WarningCircle,
-} from "@phosphor-icons/react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { formatPrice } from "@/components/catalog/product-types";
-import { Container } from "@/components/layout/container";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  LogOut,
+  Package,
+  RefreshCw,
+  ShoppingBag,
+  Sliders,
+  User,
+  AlertCircle,
+} from "lucide-react";
+import { AnnouncementBar } from "@/components/navigation/announcement-bar";
 import { SiteHeader } from "@/components/navigation/site-header";
+import { SiteFooter } from "@/components/navigation/site-footer";
+import { MobileTabBar } from "@/components/navigation/mobile-tab-bar";
+import { formatPrice } from "@/components/catalog/product-types";
 import { authClient } from "@/src/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type Order = {
   _id: string;
@@ -33,433 +41,284 @@ type Order = {
   }>;
 };
 
-function formatStatus(value: string) {
-  return value
+function formatStatus(val: string) {
+  return val
     .replace(/[_-]/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function getStatusClass(value: string) {
-  const normalized = value.toLowerCase().replace(/[_\s]/g, "-");
-
-  if (["paid", "completed", "delivered", "success"].includes(normalized)) {
-    return "account-status--success";
+function getStatusBadge(status: string) {
+  const norm = status.toLowerCase();
+  if (["paid", "completed", "delivered", "success"].includes(norm)) {
+    return (
+      <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/20 text-[10px]">
+        {formatStatus(status)}
+      </Badge>
+    );
   }
-
-  if (
-    ["pending", "processing", "created", "awaiting-payment"].includes(
-      normalized,
-    )
-  ) {
-    return "account-status--pending";
+  if (["pending", "processing", "created", "awaiting-payment"].includes(norm)) {
+    return (
+      <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/20 text-[10px]">
+        {formatStatus(status)}
+      </Badge>
+    );
   }
-
-  if (
-    ["failed", "cancelled", "canceled", "refunded", "rejected"].includes(
-      normalized,
-    )
-  ) {
-    return "account-status--attention";
+  if (["failed", "cancelled", "canceled", "refunded"].includes(norm)) {
+    return (
+      <Badge variant="destructive" className="text-[10px]">
+        {formatStatus(status)}
+      </Badge>
+    );
   }
-
-  return "account-status--neutral";
-}
-
-function getOrderIcon(status: string) {
-  const normalized = status.toLowerCase();
-
-  if (normalized === "delivered" || normalized === "completed") {
-    return CheckCircle;
-  }
-
-  if (
-    normalized === "cancelled" ||
-    normalized === "canceled" ||
-    normalized === "failed"
-  ) {
-    return WarningCircle;
-  }
-
-  return Clock;
+  return <Badge variant="secondary" className="text-[10px]">{formatStatus(status)}</Badge>;
 }
 
 export default function AccountClient() {
   const router = useRouter();
   const session = authClient.useSession();
-
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [ordersError, setOrdersError] = useState("");
   const [signingOut, setSigningOut] = useState(false);
-  const [signOutError, setSignOutError] = useState("");
 
-  const user = session.data?.user;
+  const user = session.data?.user as
+    | { role?: string; name?: string; email?: string }
+    | undefined;
+  const isAdmin = user?.role === "admin";
 
-  const loadOrders = useCallback(async (signal?: AbortSignal) => {
+  const loadOrders = useCallback(async () => {
     setOrdersLoading(true);
     setOrdersError("");
 
     try {
-      const response = await fetch("/api/orders", {
-        method: "GET",
-        credentials: "same-origin",
-        cache: "no-store",
-        signal,
-      });
+      const res = await fetch("/api/orders");
+      const data = await res.json();
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.message || "We couldn't load your orders.");
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Could not load order history.");
       }
 
-      setOrders(data.orders as Order[]);
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        return;
-      }
-
+      setOrders(Array.isArray(data.orders) ? data.orders : []);
+    } catch (err: unknown) {
       setOrdersError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while loading your orders.",
+        err instanceof Error ? err.message : "Error retrieving orders.",
       );
     } finally {
-      if (!signal?.aborted) {
-        setOrdersLoading(false);
-      }
+      setOrdersLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (session.isPending || !user) {
+    if (!session.isPending && !session.data) {
+      router.push("/login?redirect=/account");
       return;
     }
 
-    const controller = new AbortController();
-
-    void loadOrders(controller.signal);
-
-    return () => controller.abort();
-  }, [session.isPending, user, loadOrders]);
+    if (session.data) {
+      void loadOrders();
+    }
+  }, [session.data, session.isPending, router, loadOrders]);
 
   async function handleSignOut() {
-    if (signingOut) return;
-
     setSigningOut(true);
-    setSignOutError("");
-
     try {
       await authClient.signOut();
-      router.replace("/");
+      router.push("/");
       router.refresh();
     } catch {
-      setSignOutError("We couldn't sign you out. Please try again.");
       setSigningOut(false);
     }
   }
 
   if (session.isPending) {
     return (
-      <div className="site-shell">
+      <div className="min-h-screen bg-background flex flex-col">
+        <AnnouncementBar />
         <SiteHeader />
-        <main className="account-page">
-          <Container>
-            <div className="account-loading" role="status">
-              <Spinner className="spin" size={24} />
-              <span>Loading your account</span>
-            </div>
-          </Container>
+        <main className="flex-1 max-w-5xl mx-auto px-4 py-16 w-full space-y-6">
+          <Skeleton className="h-28 w-full rounded-2xl" />
+          <Skeleton className="h-64 w-full rounded-2xl" />
         </main>
+        <SiteFooter />
       </div>
     );
   }
-
-  if (!user) {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <main className="account-page">
-          <Container>
-            <section className="account-guest">
-              <div className="account-guest-icon">
-                <ShoppingBag size={30} weight="light" />
-              </div>
-
-              <p className="eyebrow">YOUR PROMETHIX3D ACCOUNT</p>
-
-              <h1 className="font-heading">Your creations start here.</h1>
-
-              <p>
-                Sign in to view your purchases and keep track of your order
-                history.
-              </p>
-
-              <Link href="/login" className="button button-primary">
-                Sign in to your account
-                <ArrowRight size={18} />
-              </Link>
-
-              <Link href="/shop" className="account-secondary-link">
-                Explore the collection
-              </Link>
-            </section>
-          </Container>
-        </main>
-      </div>
-    );
-  }
-
-  const displayName = user.name?.trim() || "there";
-  const initials = displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-
-  const orderCount = orders.length;
-  const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
 
   return (
-    <div className="site-shell">
+    <div className="min-h-screen bg-background text-foreground flex flex-col pb-16 md:pb-0">
+      <AnnouncementBar />
       <SiteHeader />
 
-      <main className="account-page">
-        <section className="account-hero">
-          <Container>
-            <div className="account-hero-top">
-              <div className="account-identity">
-                <div className="account-avatar" aria-hidden="true">
-                  {initials || "P"}
+      <main className="flex-1 py-10 md:py-16 bg-gradient-to-b from-[#eee8dc]/60 via-[#f7f4ed]/40 to-background bg-cad-dots relative">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* User Profile Card */}
+          <Card className="bg-surface border-border shadow-xs rounded-2xl p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center font-heading font-black text-2xl shrink-0">
+                  {user?.name?.[0]?.toUpperCase() || <User className="w-7 h-7" />}
                 </div>
 
-                <div className="account-identity-copy">
-                  <p className="eyebrow">YOUR ACCOUNT</p>
-                  <h1 className="font-heading">Hello, {displayName}.</h1>
-                  <p className="account-email">{user.email}</p>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h1 className="font-heading font-bold text-xl sm:text-2xl text-foreground">
+                      {user?.name || "Customer Account"}
+                    </h1>
+                    {isAdmin && (
+                      <Badge className="bg-primary text-white text-[10px]">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-foreground-muted">{user?.email}</p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="account-signout"
-                onClick={() => void handleSignOut()}
-                disabled={signingOut}
-              >
-                {signingOut ? (
-                  <Spinner className="spin" size={18} />
-                ) : (
-                  <SignOut size={18} />
+              {/* Actions */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                {isAdmin && (
+                  <Button asChild size="sm" variant="outline" className="text-xs">
+                    <Link href="/admin" className="flex items-center gap-1.5">
+                      <Sliders className="w-3.5 h-3.5 text-primary" />
+                      <span>Admin Panel</span>
+                    </Link>
+                  </Button>
                 )}
-                <span>{signingOut ? "Signing out" : "Sign out"}</span>
-              </button>
-            </div>
 
-            {signOutError && (
-              <p className="account-inline-error" role="alert">
-                {signOutError}
-              </p>
-            )}
-
-            <div className="account-summary">
-              <div className="account-summary-item">
-                <span className="account-summary-icon">
-                  <Package size={21} weight="light" />
-                </span>
-
-                <div>
-                  <p className="account-summary-label">Your orders</p>
-                  <p className="account-summary-value">
-                    {ordersLoading ? "—" : orderCount}
-                  </p>
-                </div>
-              </div>
-
-              <div className="account-summary-divider" />
-
-              <div className="account-summary-item">
-                <span className="account-summary-icon">
-                  <CreditCard size={21} weight="light" />
-                </span>
-
-                <div>
-                  <p className="account-summary-label">Order value</p>
-                  <p className="account-summary-value">
-                    {ordersLoading ? "—" : formatPrice(totalSpent)}
-                  </p>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={signingOut}
+                  onClick={handleSignOut}
+                  className="text-xs text-destructive border-destructive/20 hover:bg-destructive/10"
+                >
+                  {signingOut ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" />
+                  ) : (
+                    <LogOut className="w-3.5 h-3.5 mr-1.5" />
+                  )}
+                  <span>Sign Out</span>
+                </Button>
               </div>
             </div>
-          </Container>
-        </section>
+          </Card>
 
-        <section className="account-content">
-          <Container>
-            <div className="account-section-heading">
+          {/* Orders Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="eyebrow">YOUR PURCHASES</p>
-                <h2 className="font-heading">Order history</h2>
-                <p className="account-section-description">
-                  Your purchases, all in one place.
+                <h2 className="font-heading font-bold text-xl text-foreground flex items-center gap-2">
+                  <Package className="w-5 h-5 text-primary" />
+                  <span>My Orders</span>
+                </h2>
+                <p className="text-xs text-foreground-muted mt-0.5">
+                  Track production progress and dispatch details.
                 </p>
               </div>
 
-              <Link href="/shop" className="account-shop-link">
-                Continue shopping
-                <ArrowRight size={17} />
-              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void loadOrders()}
+                disabled={ordersLoading}
+                className="text-xs text-foreground-muted hover:text-foreground"
+              >
+                <RefreshCw
+                  className={`w-3.5 h-3.5 mr-1.5 ${
+                    ordersLoading ? "animate-spin" : ""
+                  }`}
+                />
+                <span>Refresh</span>
+              </Button>
             </div>
 
             {ordersLoading ? (
-              <div
-                className="account-loading account-loading--orders"
-                role="status"
-              >
-                <Spinner className="spin" size={24} />
-                <span>Finding your orders...</span>
+              <div className="space-y-4">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <Skeleton key={i} className="h-36 w-full rounded-xl" />
+                ))}
               </div>
             ) : ordersError ? (
-              <div className="account-message" role="alert">
-                <span className="account-message-icon account-message-icon--error">
-                  <WarningCircle size={25} />
-                </span>
-
-                <div className="account-message-copy">
-                  <h3>We couldn't load your orders.</h3>
-                  <p>{ordersError}</p>
-
-                  <button
-                    type="button"
-                    className="account-retry-button"
-                    onClick={() => void loadOrders()}
-                  >
-                    <ArrowClockwise size={17} />
-                    Try again
-                  </button>
-                </div>
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs flex items-center justify-between">
+                <span>{ordersError}</span>
+                <Button size="xs" variant="outline" onClick={() => void loadOrders()}>
+                  Retry
+                </Button>
               </div>
             ) : orders.length === 0 ? (
-              <div className="account-empty">
-                <div className="account-empty-icon">
-                  <ShoppingBag size={32} weight="light" />
-                </div>
-
-                <p className="eyebrow">A LITTLE SPACE FOR SOMETHING NEW</p>
-                <h3 className="font-heading">
-                  Your story starts with a first order.
+              <Card className="text-center py-12 px-6 bg-surface border border-dashed border-border rounded-xl space-y-3">
+                <Package className="w-10 h-10 text-foreground-subtle/40 mx-auto" />
+                <h3 className="font-heading font-bold text-base text-foreground">
+                  No orders yet
                 </h3>
-                <p>
-                  Custom creations, thoughtful gifts, and useful little
-                  inventions are waiting to be explored.
+                <p className="text-xs text-foreground-muted max-w-sm mx-auto">
+                  When you purchase 3D prints or approve a custom job quote, your tracking updates will show here.
                 </p>
-
-                <Link href="/shop" className="button button-primary">
-                  Explore the collection
-                  <ArrowRight size={18} />
-                </Link>
-              </div>
+                <Button asChild size="sm" className="bg-primary hover:bg-accent-strong text-white text-xs mt-2">
+                  <Link href="/shop">Browse Storefront</Link>
+                </Button>
+              </Card>
             ) : (
-              <div className="orders-list">
-                {orders.map((order) => {
-                  const StatusIcon = getOrderIcon(order.orderStatus);
+              <div className="space-y-4">
+                {orders.map((ord) => (
+                  <Card
+                    key={ord._id}
+                    className="bg-surface border-border rounded-xl p-5 shadow-xs space-y-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/80 text-xs">
+                      <div className="space-y-0.5">
+                        <span className="font-mono text-foreground-subtle text-[11px] block">
+                          Order ID: {ord._id}
+                        </span>
+                        <span className="text-foreground-muted">
+                          Placed on:{" "}
+                          {new Date(ord.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
+                      </div>
 
-                  const orderDate = new Date(order.createdAt);
-                  const validDate = !Number.isNaN(orderDate.getTime());
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(ord.paymentStatus)}
+                        {getStatusBadge(ord.orderStatus)}
+                      </div>
+                    </div>
 
-                  return (
-                    <article className="order-card" key={order._id}>
-                      <div className="order-card-top">
-                        <div className="order-card-reference">
-                          <span className="order-card-icon">
-                            <Package size={22} weight="light" />
+                    {/* Items list */}
+                    <div className="space-y-2">
+                      {ord.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="flex justify-between items-center text-xs"
+                        >
+                          <span className="font-medium text-foreground">
+                            {item.quantity} × {item.name}
                           </span>
-
-                          <div>
-                            <p className="order-card-number">
-                              Order #{order._id.slice(-8).toUpperCase()}
-                            </p>
-
-                            <p className="order-date">
-                              {validDate
-                                ? new Intl.DateTimeFormat("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric",
-                                  }).format(orderDate)
-                                : "Date unavailable"}
-                            </p>
-                          </div>
+                          <span className="font-bold text-foreground">
+                            {formatPrice(item.price * item.quantity)}
+                          </span>
                         </div>
+                      ))}
+                    </div>
 
-                        <div className="order-card-total">
-                          <span>Total</span>
-                          <strong>{formatPrice(order.total)}</strong>
-                        </div>
-                      </div>
-
-                      <div className="order-card-statuses">
-                        <span
-                          className={`account-status ${getStatusClass(order.paymentStatus)}`}
-                        >
-                          <CreditCard size={15} />
-                          Payment: {formatStatus(order.paymentStatus)}
-                        </span>
-
-                        <span
-                          className={`account-status ${getStatusClass(order.orderStatus)}`}
-                        >
-                          <StatusIcon size={15} />
-                          {formatStatus(order.orderStatus)}
-                        </span>
-                      </div>
-
-                      <div className="order-card-items">
-                        <p className="order-items-heading">
-                          {order.items.length}{" "}
-                          {order.items.length === 1 ? "item" : "items"}
-                        </p>
-
-                        <ul>
-                          {order.items.map((item, index) => (
-                            <li key={`${item.name}-${index}`}>
-                              <span className="order-item-name">
-                                {item.name}
-                              </span>
-
-                              <span className="order-item-quantity">
-                                × {item.quantity}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </article>
-                  );
-                })}
+                    <div className="pt-3 border-t border-border/80 flex items-center justify-between text-xs">
+                      <span className="text-foreground-muted">Total Amount</span>
+                      <span className="font-heading font-bold text-base text-primary">
+                        {formatPrice(ord.total)}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
               </div>
             )}
-
-            <div className="account-help">
-              <div>
-                <p className="account-help-title">Need help with an order?</p>
-                <p>
-                  Have a question about a purchase or a custom requirement? Get
-                  in touch with us.
-                </p>
-              </div>
-
-              <a
-                href="mailto:promethix3d@gmail.com"
-                className="account-help-link"
-              >
-                Contact us
-                <ArrowRight size={17} />
-              </a>
-            </div>
-          </Container>
-        </section>
+          </div>
+        </div>
       </main>
+
+      <SiteFooter />
+      <MobileTabBar />
     </div>
   );
 }

@@ -1,13 +1,30 @@
 "use client";
 
-import { ArrowLeft, Check, LockKey, Spinner } from "@phosphor-icons/react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Script from "next/script";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Lock,
+  Loader2,
+  ShieldCheck,
+  Truck,
+  CreditCard,
+  AlertCircle,
+  Package,
+} from "lucide-react";
+import { AnnouncementBar } from "@/components/navigation/announcement-bar";
+import { SiteHeader } from "@/components/navigation/site-header";
+import { SiteFooter } from "@/components/navigation/site-footer";
+import { MobileTabBar } from "@/components/navigation/mobile-tab-bar";
 import { formatPrice } from "@/components/catalog/product-types";
 import type { Cart } from "@/components/cart/cart-types";
-import { Container } from "@/components/layout/container";
-import { SiteHeader } from "@/components/navigation/site-header";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ShippingAddress = {
   fullName: string;
@@ -79,7 +96,6 @@ const requiredFields: Array<keyof ShippingAddress> = [
   "country",
 ];
 
-
 export default function CheckoutClient() {
   const [cart, setCart] = useState<Cart | null>(null);
   const [address, setAddress] = useState(initialAddress);
@@ -98,11 +114,7 @@ export default function CheckoutClient() {
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok || !data.success) {
-          throw new Error(
-            response.status === 401
-              ? "Sign in to continue to checkout."
-              : data.message,
-          );
+          throw new Error(data.message || "Could not load checkout data.");
         }
         if (active) setCart(data.cart);
       })
@@ -111,7 +123,7 @@ export default function CheckoutClient() {
           setError(
             reason instanceof Error
               ? reason.message
-              : "Could not load your cart.",
+              : "Could not load checkout data.",
           );
       })
       .finally(() => {
@@ -123,35 +135,38 @@ export default function CheckoutClient() {
     };
   }, []);
 
-  const subtotal = useMemo(
-    () =>
-      cart?.items.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0,
-      ) ?? 0,
+  const items = useMemo(
+    () => (cart?.items ?? []).filter((item) => Boolean(item.product)),
     [cart],
   );
-  const total = subtotal;
 
-  function updateAddress(field: keyof ShippingAddress, value: string) {
-    setAddress((current) => ({ ...current, [field]: value }));
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0,
+  );
+
+  function handleAddressChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
+    const { name, value } = e.target;
+    setAddress((prev) => ({ ...prev, [name]: value }));
   }
 
-  function validateAddress() {
-    const missing = requiredFields.filter((field) => !address[field].trim());
-    if (missing.length > 0) {
-      setError("Please complete all required shipping fields.");
-      return false;
+  function validateAddress(): boolean {
+    for (const field of requiredFields) {
+      if (!address[field].trim()) {
+        setError(`Please enter your ${field.replace(/([A-Z])/g, " $1").toLowerCase()}.`);
+        return false;
+      }
     }
     if (address.phone.trim().length < 10) {
-      setError("Please enter a valid phone number.");
+      setError("Please enter a valid 10-digit phone number.");
       return false;
     }
     if (address.postalCode.trim().length < 4) {
       setError("Please enter a valid postal code.");
       return false;
     }
-    // Must match backend: locationDetails z.string().min(5)
     if (address.locationDetails.trim().length < 5) {
       setError("Please provide more detail for the exact location (at least 5 characters).");
       return false;
@@ -171,10 +186,9 @@ export default function CheckoutClient() {
     }
   }
 
-  async function placeOrder(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function placeOrder(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     if (submitting || paymentState === "success" || !validateAddress()) return;
-    // Allow retry if a DB order already exists (pendingOrderId set) even if cart appears empty
     if (!pendingOrderId && !cart?.items.length) {
       setError("Your cart is empty.");
       return;
@@ -184,9 +198,6 @@ export default function CheckoutClient() {
     setPaymentState("processing");
     setError("");
 
-    // Track whether we successfully handed off to the Razorpay modal.
-    // If we throw before that point we reset submitting ourselves.
-    // After razorpay.open() the handler/ondismiss callbacks own that state.
     let modalOpened = false;
 
     try {
@@ -200,7 +211,7 @@ export default function CheckoutClient() {
         });
         const orderData = await orderResponse.json();
         if (!orderResponse.ok || !orderData.success) {
-          throw new Error(orderData.message || "Could not create your order.");
+          throw new Error(orderData.message || "Could not create order.");
         }
         orderId = orderData.order._id;
         setPendingOrderId(orderId);
@@ -217,13 +228,13 @@ export default function CheckoutClient() {
       }
 
       if (!window.Razorpay) {
-        throw new Error("Payment checkout is unavailable. Please try again.");
+        throw new Error("Razorpay gateway is initializing. Please try again in a moment.");
       }
 
       const razorpay = new window.Razorpay({
         amount: paymentData.payment.amount,
         currency: paymentData.payment.currency,
-        description: "Promethix3D order",
+        description: "Promethix3D 3D Printed Order",
         handler: async (response) => {
           try {
             await verifyPayment(orderId, response);
@@ -245,16 +256,14 @@ export default function CheckoutClient() {
         modal: {
           ondismiss: () => {
             setPaymentState("failure");
-            setError(
-              "Payment was cancelled. You can retry payment from this page.",
-            );
+            setError("Payment was cancelled. You can retry anytime.");
             setSubmitting(false);
           },
         },
         name: "Promethix3D",
         order_id: paymentData.payment.razorpayOrderId,
         prefill: { contact: address.phone, name: address.fullName },
-        theme: { color: "#b55335" },
+        theme: { color: "#d9531e" },
       });
 
       modalOpened = true;
@@ -266,287 +275,339 @@ export default function CheckoutClient() {
           ? reason.message
           : "Could not complete checkout.",
       );
-      // Only reset submitting if we never handed off to the Razorpay modal.
-      // If the modal was opened, its handler/ondismiss callbacks own this state.
       if (!modalOpened) {
         setSubmitting(false);
       }
     }
   }
 
-  if (loading) {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <Container>
-          <div className="detail-loading" role="status">
-            Loading checkout…
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  if (error && !cart) {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <Container>
-          <div className="detail-state" role="alert">
-            <p>{error}</p>
-            <Link href="/cart" className="button button-secondary">
-              Back to cart
-            </Link>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  if (paymentState === "success") {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <Container>
-          <div className="checkout-success">
-            <Check size={30} aria-hidden="true" />
-            <p className="eyebrow">Payment verified</p>
-            <h1 className="font-heading">Thank you for your order.</h1>
-            <p>
-              Your payment has been verified and your order is being prepared.
-            </p>
-            <Link href="/shop" className="button button-primary">
-              Continue shopping
-            </Link>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
-  if (!cart?.items.length && !pendingOrderId) {
-    return (
-      <div className="site-shell">
-        <SiteHeader />
-        <Container>
-          <div className="cart-state">
-            <p>Your cart is empty.</p>
-            <Link href="/shop" className="button button-primary">
-              Shop products
-            </Link>
-          </div>
-        </Container>
-      </div>
-    );
-  }
-
   return (
-    <div className="site-shell">
-      <Script
-        src="https://checkout.razorpay.com/v1/checkout.js"
-        strategy="afterInteractive"
-      />
+    <div className="min-h-screen bg-background text-foreground flex flex-col pb-16 md:pb-0">
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      <AnnouncementBar />
       <SiteHeader />
-      <main>
-        <section className="page-intro-section">
-          <Container>
-            <Link href="/cart" className="back-link">
-              <ArrowLeft size={17} aria-hidden="true" /> Back to cart
+
+      <main className="flex-1">
+        {/* Checkout Header Band */}
+        <section className="bg-gradient-to-b from-[#eee8dc]/80 via-[#f7f4ed]/50 to-background border-b border-border py-8 bg-cad-grid relative overflow-hidden">
+          <div className="absolute top-0 right-1/4 w-72 h-36 bg-radial-warmth pointer-events-none" />
+          <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <Link
+              href="/cart"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground-muted hover:text-foreground transition-colors group mb-3"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              <span>Back to Cart</span>
             </Link>
-            <p className="eyebrow checkout-eyebrow">Secure checkout</p>
-            <h1 className="font-heading page-title">Complete your order.</h1>
-          </Container>
+            <h1 className="font-heading font-extrabold text-3xl sm:text-4xl text-foreground">
+              Secure Checkout
+            </h1>
+          </div>
         </section>
 
-        <section className="checkout-content">
-          <Container className="checkout-layout">
-            <form className="checkout-form" onSubmit={placeOrder}>
-              <fieldset disabled={submitting}>
-                <legend className="font-heading form-section-title">
-                  Shipping details
-                </legend>
-                <div className="form-grid">
-                  <label className="form-field form-field-wide">
-                    Full name *
-                    <input
-                      value={address.fullName}
-                      onChange={(event) =>
-                        updateAddress("fullName", event.target.value)
-                      }
-                      autoComplete="name"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    Phone *
-                    <input
-                      value={address.phone}
-                      onChange={(event) =>
-                        updateAddress("phone", event.target.value)
-                      }
-                      autoComplete="tel"
-                      inputMode="tel"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    House / flat number *
-                    <input
-                      value={address.houseNumber}
-                      onChange={(event) =>
-                        updateAddress("houseNumber", event.target.value)
-                      }
-                      autoComplete="address-line1"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    Country *
-                    <input
-                      value={address.country}
-                      onChange={(event) =>
-                        updateAddress("country", event.target.value)
-                      }
-                      autoComplete="country-name"
-                      required
-                    />
-                  </label>
-                  <label className="form-field form-field-wide">
-                    Street / area address *
-                    <input
-                      value={address.addressLine1}
-                      onChange={(event) =>
-                        updateAddress("addressLine1", event.target.value)
-                      }
-                      autoComplete="address-line1"
-                      required
-                    />
-                  </label>
-                  <label className="form-field form-field-wide">
-                    Address line 2
-                    <input
-                      value={address.addressLine2}
-                      onChange={(event) =>
-                        updateAddress("addressLine2", event.target.value)
-                      }
-                      autoComplete="address-line2"
-                    />
-                  </label>
-                  <label className="form-field">
-                    City *
-                    <input
-                      value={address.city}
-                      onChange={(event) =>
-                        updateAddress("city", event.target.value)
-                      }
-                      autoComplete="address-level2"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    State *
-                    <input
-                      value={address.state}
-                      onChange={(event) =>
-                        updateAddress("state", event.target.value)
-                      }
-                      autoComplete="address-level1"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    Postal code *
-                    <input
-                      value={address.postalCode}
-                      onChange={(event) =>
-                        updateAddress("postalCode", event.target.value)
-                      }
-                      autoComplete="postal-code"
-                      inputMode="numeric"
-                      required
-                    />
-                  </label>
-                  <label className="form-field">
-                    Nearest landmark *
-                    <input
-                      value={address.landmark}
-                      onChange={(event) =>
-                        updateAddress("landmark", event.target.value)
-                      }
-                      placeholder="For example, beside..."
-                      required
-                    />
-                  </label>
-                  <label className="form-field form-field-wide">
-                    Exact location / delivery directions *
-                    <textarea
-                      rows={3}
-                      value={address.locationDetails}
-                      onChange={(event) =>
-                        updateAddress("locationDetails", event.target.value)
-                      }
-                      placeholder="Add gate, building, floor, entrance, or directions for delivery"
-                      required
-                    />
-                  </label>
-                </div>
-              </fieldset>
+        {/* Checkout Form & Order Summary Section */}
+        <section className="py-8 md:py-14 bg-background bg-cad-dots">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
-              {error ? (
-                <p className="feedback feedback-error" role="alert">
-                  {error}
+          {loading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <Skeleton className="lg:col-span-2 h-96 rounded-xl" />
+              <Skeleton className="h-64 rounded-xl" />
+            </div>
+          ) : paymentState === "success" ? (
+            <Card className="max-w-xl mx-auto p-8 sm:p-12 text-center bg-surface border-border rounded-2xl shadow-md space-y-6">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 mx-auto flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+
+              <div className="space-y-2">
+                <h2 className="font-heading font-bold text-2xl sm:text-3xl text-foreground">
+                  Order Confirmed!
+                </h2>
+                <p className="text-xs sm:text-sm text-foreground-muted">
+                  Thank you for your order! We are slicing and queueing your print job in our Kolkata studio. You will receive real-time tracking updates as soon as it dispatches.
                 </p>
-              ) : null}
+              </div>
 
-              <button
-                type="submit"
-                className="button button-primary checkout-submit"
-                disabled={
-                  submitting || (!cart?.items.length && !pendingOrderId)
-                }
-              >
-                {submitting ? (
-                  <Spinner className="spin" size={18} aria-hidden="true" />
-                ) : (
-                  <LockKey size={18} aria-hidden="true" />
-                )}
-                {submitting ? "Processing…" : "Place order and pay"}
-              </button>
-              <p className="checkout-payment-note">
-                Secure payment is completed through Razorpay. Cards, UPI, net
-                banking, and wallets may be available based on your location.
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button asChild className="w-full sm:w-auto bg-primary hover:bg-accent-strong text-white font-semibold">
+                  <Link href="/account">View My Orders</Link>
+                </Button>
+                <Button asChild variant="outline" className="w-full sm:w-auto">
+                  <Link href="/shop">Continue Shopping</Link>
+                </Button>
+              </div>
+            </Card>
+          ) : items.length === 0 && !pendingOrderId ? (
+            <Card className="max-w-md mx-auto p-8 text-center bg-surface border-border rounded-2xl space-y-4 shadow-xs">
+              <Package className="w-12 h-12 text-foreground-subtle mx-auto" />
+              <h2 className="font-heading font-bold text-lg text-foreground">
+                Your cart is empty
+              </h2>
+              <p className="text-xs text-foreground-muted">
+                Please add products to your cart before proceeding to checkout.
               </p>
-              {paymentState === "failure" ? (
-                <p className="checkout-retry">
-                  Your order may already exist. Retry only if you did not
-                  complete payment.
-                </p>
-              ) : null}
+              <Button asChild className="w-full bg-primary hover:bg-accent-strong text-white font-semibold">
+                <Link href="/shop">Browse Storefront</Link>
+              </Button>
+            </Card>
+          ) : (
+            <form onSubmit={placeOrder} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+              {/* Shipping Address Form */}
+              <div className="lg:col-span-2 space-y-6">
+                <Card className="bg-surface border-border rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
+                  <div>
+                    <h2 className="font-heading font-bold text-xl text-foreground flex items-center gap-2">
+                      <Truck className="w-5 h-5 text-primary" />
+                      Shipping Details (India)
+                    </h2>
+                    <p className="text-xs text-foreground-muted mt-1">
+                      Enter the address where your shockproof print parcel should be dispatched.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold text-foreground">
+                        Full Name <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="fullName"
+                        value={address.fullName}
+                        onChange={handleAddressChange}
+                        placeholder="Receiver's name"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="text-xs font-semibold text-foreground">
+                        Phone / Contact Number <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="tel"
+                        name="phone"
+                        value={address.phone}
+                        onChange={handleAddressChange}
+                        placeholder="10-digit mobile number for delivery updates"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        Flat / House / Building No. <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="houseNumber"
+                        value={address.houseNumber}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Flat 4B, Tower 2"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        Street / Area / Colony <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="addressLine1"
+                        value={address.addressLine1}
+                        onChange={handleAddressChange}
+                        placeholder="Street or locality"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        Landmark <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="landmark"
+                        value={address.landmark}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Near Metro Gate 3"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        Exact Location Details <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="locationDetails"
+                        value={address.locationDetails}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Opposite Park, 2nd floor"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        City <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="city"
+                        value={address.city}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. Kolkata"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        State <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="state"
+                        value={address.state}
+                        onChange={handleAddressChange}
+                        placeholder="e.g. West Bengal"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        PIN Code <span className="text-primary">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        name="postalCode"
+                        value={address.postalCode}
+                        onChange={handleAddressChange}
+                        placeholder="6-digit postal code"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">
+                        Country
+                      </label>
+                      <Input
+                        type="text"
+                        name="country"
+                        value={address.country}
+                        disabled
+                        className="bg-secondary/40"
+                      />
+                    </div>
+                  </div>
+                </Card>
+
+                {error && (
+                  <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-xl flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary & Pay Action */}
+              <div className="space-y-4 lg:sticky lg:top-24">
+                <Card className="bg-surface border-border rounded-xl p-6 shadow-xs space-y-5">
+                  <h2 className="font-heading font-bold text-lg text-foreground pb-3 border-b border-border">
+                    Review Order
+                  </h2>
+
+                  {/* Item Breakdown */}
+                  <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                    {items.map((item) => (
+                      <div
+                        key={item.product._id}
+                        className="flex justify-between items-start text-xs gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-foreground truncate">
+                            {item.product?.name}
+                          </p>
+                          <p className="text-[11px] text-foreground-muted">
+                            Qty: {item.quantity} × {formatPrice(item.price)}
+                          </p>
+                        </div>
+                        <span className="font-bold text-foreground shrink-0">
+                          {formatPrice(item.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2 text-xs text-foreground-muted">
+                    <div className="flex justify-between">
+                      <span>Tracked Express Shipping</span>
+                      <span className="font-semibold text-emerald-600">FREE</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Shockproof Foam Box</span>
+                      <span className="font-semibold text-emerald-600">Included</span>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-heading font-bold text-base text-foreground">
+                      Total Payable
+                    </span>
+                    <span className="font-heading font-black text-2xl text-primary">
+                      {formatPrice(total)}
+                    </span>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={submitting}
+                    className="w-full bg-primary hover:bg-accent-strong text-white font-semibold h-12 shadow-xs"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span>Opening Razorpay Gateway...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        <span>Pay {formatPrice(total)} Securely</span>
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="pt-2 space-y-1.5 text-[11px] text-foreground-subtle border-t border-border/80">
+                    <p className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>UPI, Cards, NetBanking, Wallets supported</span>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <span>256-bit encrypted Razorpay transaction</span>
+                    </p>
+                  </div>
+                </Card>
+              </div>
             </form>
-
-            <aside className="summary-card checkout-summary">
-              <h2 className="font-heading">Order summary</h2>
-              {cart?.items.map((item) => (
-                <div className="checkout-item" key={item.product._id}>
-                  <span>
-                    {item.product.name} × {item.quantity}
-                  </span>
-                  <span>{formatPrice(item.price * item.quantity)}</span>
-                </div>
-              ))}
-              <div className="summary-row">
-                <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
-              </div>
-
-              <div className="summary-total">
-                <span>Total</span>
-                <strong>{formatPrice(total)}</strong>
-              </div>
-            </aside>
-          </Container>
+          )}
+        </div>
         </section>
       </main>
+
+      <SiteFooter />
+      <MobileTabBar />
     </div>
   );
 }

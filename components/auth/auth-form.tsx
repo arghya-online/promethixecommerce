@@ -1,11 +1,12 @@
 "use client";
 
-import { ArrowRight, Spinner, WarningCircle } from "@phosphor-icons/react";
-import { motion, AnimatePresence } from "motion/react";
+import { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { ArrowRight, Loader2, AlertCircle, Lock, Mail, User } from "lucide-react";
 import { authClient } from "@/src/lib/auth-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export function AuthForm({
   mode,
@@ -22,8 +23,8 @@ export function AuthForm({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError("");
 
     if (!email.trim() || !password) {
@@ -32,7 +33,7 @@ export function AuthForm({
     }
 
     if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
+      setError("Password must be at least 8 characters long.");
       return;
     }
 
@@ -52,7 +53,7 @@ export function AuthForm({
       if (response.error) {
         setError(
           response.error.message ||
-            "Authentication failed. Please check your credentials.",
+            "Authentication failed. Please verify your credentials.",
         );
         setLoading(false);
         return;
@@ -60,105 +61,92 @@ export function AuthForm({
 
       router.push(redirectTo);
       router.refresh();
-    } catch (error) {
-      console.error("Authentication request failed", error);
-      setError(
-        "We could not reach the authentication service. Please try again.",
-      );
+    } catch (err) {
+      console.error("Auth request failed", err);
+      setError("Unable to reach the authentication service. Please try again.");
       setLoading(false);
     }
   }
 
   return (
-    <form className="auth-form" onSubmit={submit} noValidate>
+    <form onSubmit={submit} className="space-y-4" noValidate>
       {isSignUp && (
-        <motion.div
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.2 }}
-        >
-          <label className="form-field">
-            Full Name
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              autoComplete="name"
-              placeholder="e.g. Debanjan Mukherjee"
-              required
-            />
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <User className="w-3.5 h-3.5 text-primary" />
+            <span>Full Name</span>
           </label>
-        </motion.div>
+          <Input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            placeholder="e.g. Debanjan Mukherjee"
+            required
+            className="text-xs h-10"
+          />
+        </div>
       )}
 
-      <label className="form-field">
-        Email Address
-        <input
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+          <Mail className="w-3.5 h-3.5 text-primary" />
+          <span>Email Address</span>
+        </label>
+        <Input
           type="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
           placeholder="your.email@example.com"
           required
+          className="text-xs h-10"
         />
-      </label>
+      </div>
 
-      <div className="form-field">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <span>Password</span>
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-primary" />
+            <span>Password</span>
+          </label>
           {!isSignUp && (
-            <Link
-              href="/forgot-password"
-              style={{
-                fontSize: "0.8rem",
-                color: "#D9531E",
-                fontWeight: 500,
-                textDecoration: "none",
-              }}
-            >
-              Forgot password?
-            </Link>
+            <span className="text-[11px] text-foreground-muted">
+              Min. 8 characters
+            </span>
           )}
         </div>
-        <input
+        <Input
           type="password"
           value={password}
-          onChange={(event) => setPassword(event.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
           autoComplete={isSignUp ? "new-password" : "current-password"}
           placeholder="••••••••"
           required
           minLength={8}
+          className="text-xs h-10"
         />
       </div>
 
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            className="feedback feedback-error"
-            role="alert"
-            style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
-          >
-            <WarningCircle size={18} weight="bold" />
-            <span>{error}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
-      <motion.button
-        whileHover={{ scale: loading ? 1 : 1.01 }}
-        whileTap={{ scale: loading ? 1 : 0.99 }}
+      <Button
         type="submit"
-        className="auth-submit"
         disabled={loading}
+        className="w-full bg-primary hover:bg-accent-strong text-white font-semibold h-11 text-xs shadow-xs"
       >
-        {loading ? <Spinner className="spin" size={18} aria-hidden="true" /> : null}
-        <span>{loading ? "Please wait…" : isSignUp ? "Create account" : "Sign in"}</span>
-        {!loading && <ArrowRight size={18} aria-hidden="true" />}
-      </motion.button>
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+        ) : (
+          <span>{isSignUp ? "Create Promethix3D Account" : "Sign In to Promethix3D"}</span>
+        )}
+        {!loading && <ArrowRight className="w-4 h-4 ml-1.5" />}
+      </Button>
     </form>
   );
 }

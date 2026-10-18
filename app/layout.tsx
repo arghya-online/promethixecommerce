@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { siteConfig } from "@/data/site";
+import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -16,11 +18,10 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "Promethix3D",
-    template: "%s | Promethix3D",
+    default: `${siteConfig.name} | 3D Printed Products & Product Consultancy`,
+    template: `%s | ${siteConfig.name}`,
   },
-  description:
-    "Promethix3d is a 3D printing service in Kolkata, India. We make gifts, figurines, working parts and prototypes.",
+  description: siteConfig.description,
   icons: {
     icon: "/icon.png",
     shortcut: "/icon.png",
@@ -30,10 +31,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body>
+    <html
+      lang="en"
+      className={`${inter.variable} ${spaceGrotesk.variable} scroll-smooth`}
+    >
+      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary selection:text-white">
         {children}
         <WhatsAppButton />
+        <Toaster richColors position="bottom-right" />
         <GoogleAnalytics gaId="G-SV1M66T9HY" />
       </body>
     </html>
