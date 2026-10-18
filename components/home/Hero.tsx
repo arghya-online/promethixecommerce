@@ -40,11 +40,11 @@ export function Hero() {
               href="/custom-orders"
               className="clean-btn clean-btn--primary"
             >
-              Get a Free Quote{" "}
+              Custom Order{" "}
               <ArrowRight size={17} weight="bold" aria-hidden="true" />
             </Link>
             <Link href="/shop" className="clean-btn clean-btn--secondary">
-              Visit Store
+              Shop Now
             </Link>
           </div>
 
