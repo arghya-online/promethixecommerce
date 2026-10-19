@@ -49,7 +49,7 @@ export function HeroSlideshow() {
 
   return (
     <section
-      className="relative overflow-hidden bg-background  py-4 sm:py-6 lg:py-8"
+      className="relative overflow-hidden bg-background  py-2 sm:py-2 lg:py-4"
       aria-label="Featured Highlights"
     >
       <div className="max-w-7xl mt-10 mx-auto px-4 sm:px-6 lg:px-8">
